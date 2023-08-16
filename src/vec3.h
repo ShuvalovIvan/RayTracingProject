@@ -53,6 +53,13 @@ class vec3 {
             return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);
         }
 
+        bool similar_to(const vec3 &other) const {
+            auto s = 1e-3;
+            return (fabs(e[0] - other.e[0]) < s) && 
+                (fabs(e[1] - other.e[1]) < s) && 
+                (fabs(e[2] - other.e[2]) < s);
+        }
+
         static vec3 random() {
             return vec3(random_double(), random_double(), random_double());
         }

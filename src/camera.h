@@ -22,6 +22,9 @@ class camera {
     double defocus_angle = 0;  // Variation angle of rays through each pixel
     double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
 
+    auto image_size() const {
+        return std::make_pair(image_width, image_height);
+    }
 
     void render(const hittable& world) {
         initialize();
@@ -42,16 +45,6 @@ class camera {
 
         std::clog << "\rDone.                 \n";
     }
-
-  private:
-    int    image_height;   // Rendered image height
-    point3 center;         // Camera center
-    point3 pixel00_loc;    // Location of pixel 0, 0
-    vec3   pixel_delta_u;  // Offset to pixel to the right
-    vec3   pixel_delta_v;  // Offset to pixel below
-    vec3   u, v, w;        // Camera frame basis vectors
-    vec3   defocus_disk_u;  // Defocus disk horizontal radius
-    vec3   defocus_disk_v;  // Defocus disk vertical radius
 
     void initialize() {
         image_height = static_cast<int>(image_width / aspect_ratio);
@@ -135,4 +128,14 @@ class camera {
         auto a = 0.5*(unit_direction.y() + 1.0);
         return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
     }
+
+  private:
+    int    image_height;   // Rendered image height
+    point3 center;         // Camera center
+    point3 pixel00_loc;    // Location of pixel 0, 0
+    vec3   pixel_delta_u;  // Offset to pixel to the right
+    vec3   pixel_delta_v;  // Offset to pixel below
+    vec3   u, v, w;        // Camera frame basis vectors
+    vec3   defocus_disk_u;  // Defocus disk horizontal radius
+    vec3   defocus_disk_v;  // Defocus disk vertical radius
 };
