@@ -108,9 +108,4 @@ if(MSVC)
     add_definitions(/wd26451)  # Arithmetic overflow, casting 4 byte value to 8 byte value
 endif()
 
-file(GLOB SOURCES
-    *.h
-    *.cpp
-)
-
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
+add_subdirectory(src)
