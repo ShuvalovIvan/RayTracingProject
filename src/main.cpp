@@ -1,6 +1,7 @@
 #include "rtweekend.h"
 
 #include "camera.h"
+#include "camera_cpu.h"
 #include "color.h"
 #include "hittable_list.h"
 #include "material.h"
@@ -51,7 +52,7 @@ int main() {
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
-    camera cam;
+    CPUImpl::Camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 400;

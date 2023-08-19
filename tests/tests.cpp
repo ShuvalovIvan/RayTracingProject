@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "camera_cpu.h"
 #include "hittable_list.h"
 #include "material.h"
 #include "sphere.h"
@@ -28,7 +29,7 @@ protected:
     }
 
     hittable_list world;
-    camera cam;
+    CPUImpl::Camera cam;
 };
 
 TEST_F(RayTracingFixture, PixelMatch) {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(raytracing_project)
 message(STATUS "Project name ${CMAKE_PROJECT_NAME}")
 
@@ -109,6 +109,7 @@ if(MSVC)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIRECTORY}/bin)
+add_subdirectory(assets)
 add_subdirectory(src)
 
 # We check if this is the main file
