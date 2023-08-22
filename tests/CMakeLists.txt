@@ -5,10 +5,6 @@ set(TESTNAME "tests")
 project(${TESTNAME} LANGUAGES CXX)
 enable_testing()
 
-file(GLOB TESTED_SOURCES
-    ../src/*.h
-)
-
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -22,9 +18,9 @@ FetchContent_MakeAvailable(googletest)
 
 add_test(NAME MyTests COMMAND ${TESTNAME})
 
-add_executable(${TESTNAME} tests.cpp ${TESTED_SOURCES})
+add_executable(${TESTNAME} tests.cpp vulkan_tests.cpp)
 
-target_include_directories(${TESTNAME} PRIVATE ../src)
-target_link_libraries(${TESTNAME} gtest gtest_main)
+target_include_directories(${TESTNAME} PRIVATE ../src ../src/vulkan)
+target_link_libraries(${TESTNAME} ${PROJECT_LIB} gtest gtest_main)
 
 gtest_discover_tests(${TESTNAME})

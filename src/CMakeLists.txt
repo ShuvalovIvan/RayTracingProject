@@ -1,6 +1,10 @@
-file(GLOB SOURCES
-    *.h
-    *.cpp
+target_sources(${PROJECT_LIB}
+    PRIVATE
+        vulkan/device.cpp
+        vulkan/graphical_environment_vulkan.cpp
+        vulkan/shader_loader.cpp
+    PUBLIC
+        graphical_environment.h
 )
 
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_LIB} ${Vulkan_LIBRARIES})

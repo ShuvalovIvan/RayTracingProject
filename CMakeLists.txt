@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(raytracing_project)
-message(STATUS "Project name ${CMAKE_PROJECT_NAME}")
+set(PROJECT_LIB raytracing_project_lib)
+add_library(${PROJECT_LIB} "")
+message(STATUS "Project name ${CMAKE_PROJECT_NAME}, lib ${PROJECT_LIB}")
 
 # Set the C/C++ specified in the projects as requirements
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,11 +17,11 @@ if(MSVC)
   string(APPEND CMAKE_CXX_FLAGS " /MP")
 endif()
 
-message(STATUS "BASE_DIRECTORY = ${BASE_DIRECTORY}")
+message(STATUS "Source dir = ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
 
 if(NOT OUTPUT_PATH)
-  set(OUTPUT_PATH ${BASE_DIRECTORY}/bin CACHE PATH "Directory where outputs will be stored")
+  set(OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin CACHE PATH "Directory where outputs will be stored")
 endif()
 
 add_definitions(-DPROJECT_NAME="${CMAKE_PROJECT_NAME}")
@@ -47,6 +49,7 @@ endif(UNIX)
 macro(_add_package_VulkanSDK)
   find_package(Vulkan REQUIRED
     COMPONENTS glslc glslangValidator shaderc_combined)
+  
   if(Vulkan_FOUND)
       Message(STATUS "--> using package VulkanSDK (linking with ${Vulkan_LIBRARY})")
       get_directory_property(hasParent PARENT_DIRECTORY)
@@ -108,9 +111,16 @@ if(MSVC)
     add_definitions(/wd26451)  # Arithmetic overflow, casting 4 byte value to 8 byte value
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIRECTORY}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 add_subdirectory(assets)
 add_subdirectory(src)
+
+add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
+target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+list(APPEND CMAKE_PREFIX_PATH "dependencies/GLFW/lib/cmake")
+find_package(glfw3 REQUIRED)
+target_link_libraries(${PROJECT_LIB} glfw)
 
 # We check if this is the main file
 # you don't usually want users of your library to
