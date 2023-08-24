@@ -1,6 +1,10 @@
 #pragma once
 
+#include <iostream>
 #include <string>
+
+#define LOG_AND_THROW(e)  std::cerr << "Throw " << (e).what() << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
+   throw e;
 
 // Top level class to setup the Graphical Environment.
 class GraphicalEnvironment {

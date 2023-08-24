@@ -1,20 +1,27 @@
 #include "graphical_environment_vulkan.h"
 
 #include <vulkan/vulkan_core.h>
+#include <Windows.h>
 
 namespace VulkanImpl
 {
 
     void GraphicalEnvironment::init()
     {
+        std::clog << "Init Vulkan" << std::endl;
+#   ifdef _WIN32
+        char buffer[MAX_PATH] = { 0 };
+        GetModuleFileName( NULL, buffer, MAX_PATH );
+        std::clog << "CWD " << buffer << std::endl;
+#   endif
         if (!glfwInit())
         {
-            throw std::runtime_error("glfwInit() failed");
+            LOG_AND_THROW(std::runtime_error("glfwInit() failed"));
         }
 
         if (!glfwVulkanSupported())
         {
-            throw std::runtime_error("glfwVulkanSupported() failed");
+            LOG_AND_THROW(std::runtime_error("glfwVulkanSupported() failed"));
         }
 
         VkApplicationInfo appInfo;
@@ -28,22 +35,28 @@ namespace VulkanImpl
         uint32_t glfwExtensionCount = 0;
         auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
         if (glfwExtensionCount <= 0) {
-            throw std::runtime_error("No instance extensions found");
+            LOG_AND_THROW(std::runtime_error("No instance extensions found"));
         }
+        std::clog << "Extensions found with GLFW: " << glfwExtensionCount << " ";
+        std::copy(&glfwExtensions[0], &glfwExtensions[glfwExtensionCount], std::ostream_iterator<const char *>(std::clog, "\n"));
 
-        VkInstanceCreateInfo createInfo;
+        VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
         createInfo.enabledExtensionCount = glfwExtensionCount;
         createInfo.ppEnabledExtensionNames = glfwExtensions;
 
         if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &_instance)) {
-            throw std::runtime_error("create instance");
+            LOG_AND_THROW(std::runtime_error("create instance"));
         }
-    
+        std::clog << "Instance created" << std::endl;
+
         window_init();
+        std::clog << "Window initialized" << std::endl;
         surface_init();
+        std::clog << "Surface initialized" << std::endl;
         _device.init(_instance, _surface);
+        std::cerr << "Vulkan initialized" << std::endl;
     }
 
     void GraphicalEnvironment::window_init() {
@@ -53,7 +66,7 @@ namespace VulkanImpl
         _window = glfwCreateWindow(800, 600, "Vulkan project", nullptr, nullptr);
         if (_window == nullptr)
         {
-            throw std::runtime_error("failed to create window");
+            LOG_AND_THROW(std::runtime_error("failed to create window"));
         }
 
         glfwSetWindowUserPointer(_window, this);
@@ -65,7 +78,7 @@ namespace VulkanImpl
 
     void GraphicalEnvironment::surface_init() {
         if (VK_SUCCESS != glfwCreateWindowSurface(_instance, _window, nullptr, &_surface)) {
-            throw std::runtime_error("create window surface");
+            LOG_AND_THROW(std::runtime_error("create window surface"));
         }
     }
 

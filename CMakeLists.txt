@@ -3,6 +3,7 @@ project(raytracing_project)
 set(PROJECT_LIB raytracing_project_lib)
 add_library(${PROJECT_LIB} "")
 message(STATUS "Project name ${CMAKE_PROJECT_NAME}, lib ${PROJECT_LIB}")
+set( CMAKE_VERBOSE_MAKEFILE on )
 
 # Set the C/C++ specified in the projects as requirements
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,6 +16,8 @@ if(MSVC)
   # Enable parallel builds by default on MSVC
   string(APPEND CMAKE_C_FLAGS " /MP")
   string(APPEND CMAKE_CXX_FLAGS " /MP")
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:\"mfc110d\"")
 endif()
 
 message(STATUS "Source dir = ${CMAKE_SOURCE_DIR}")

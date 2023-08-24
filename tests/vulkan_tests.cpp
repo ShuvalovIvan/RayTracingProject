@@ -12,7 +12,6 @@ protected:
 
     void TearDown() override {}
 
-
     VulkanImpl::GraphicalEnvironment _scene;
 };
 

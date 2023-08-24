@@ -15,6 +15,7 @@ class GraphicalEnvironment : public ::GraphicalEnvironment {
 public:
     GraphicalEnvironment() {}
     ~GraphicalEnvironment() override {
+        std::cerr << "Tearing down" << std::endl;
         vkDestroyInstance(_instance, 0);
     }
 
@@ -22,11 +23,12 @@ public:
 
     void load_shader(const std::string& file, VkShaderStageFlagBits stage) {
         ShaderLoader loader = {file, _device};
-        loader.load_shader_module(stage);
+        auto shader = loader.load_shader_module(stage);
+        std::clog << "shader " << file << " loaded" << std::endl;
     }
 
     void load_preconfigured_shapes() override {
-        load_shader("../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
     }
 
 private:

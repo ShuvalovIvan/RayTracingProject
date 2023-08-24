@@ -43,3 +43,6 @@ TEST_F(RayTracingFixture, PixelMatch) {
 
     EXPECT_TRUE(ray_color.similar_to(color(0.253, 0.3518, 0.5))) << ray_color;
 }
+
+TEST_F(RayTracingFixture, Tmp) {
+}
