@@ -6,7 +6,6 @@
 #include "device.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
-#include "shader_loader.h"
 
 namespace VulkanImpl {
 
@@ -17,15 +16,13 @@ public:
     ~GraphicalEnvironment() override {
         std::cerr << "Tearing down" << std::endl;
         vkDestroyInstance(_instance, 0);
+        glfwDestroyWindow(_window);
+        glfwTerminate();
     }
 
     void init() override;
 
-    void load_shader(const std::string& file, VkShaderStageFlagBits stage) {
-        ShaderLoader loader = {file, _device};
-        auto shader = loader.load_shader_module(stage);
-        std::clog << "shader " << file << " loaded" << std::endl;
-    }
+    void load_shader(const std::string& file, VkShaderStageFlagBits stage);
 
     void load_preconfigured_shapes() override {
         load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);

@@ -1,7 +1,10 @@
-#include "graphical_environment_vulkan.h"
-
 #include <vulkan/vulkan_core.h>
 #include <Windows.h>
+
+#include "graphical_environment_vulkan.h"
+
+#include "shader_loader.h"
+
 
 namespace VulkanImpl
 {
@@ -55,7 +58,7 @@ namespace VulkanImpl
         std::clog << "Window initialized" << std::endl;
         surface_init();
         std::clog << "Surface initialized" << std::endl;
-        _device.init(_instance, _surface);
+        _device.init(_instance, _surface, _window);
         std::cerr << "Vulkan initialized" << std::endl;
     }
 
@@ -80,6 +83,12 @@ namespace VulkanImpl
         if (VK_SUCCESS != glfwCreateWindowSurface(_instance, _window, nullptr, &_surface)) {
             LOG_AND_THROW(std::runtime_error("create window surface"));
         }
+    }
+
+    void GraphicalEnvironment::load_shader(const std::string& file, VkShaderStageFlagBits stage) {
+        ShaderLoader loader = {file, _device};
+        auto shader = loader.load_shader_module(stage);
+        std::clog << "shader " << file << " loaded" << std::endl;
     }
 
 } // namespace

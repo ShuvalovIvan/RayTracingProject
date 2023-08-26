@@ -119,6 +119,7 @@ add_subdirectory(assets)
 add_subdirectory(src)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
+target_compile_features(${PROJECT_LIB} PRIVATE cxx_std_17)
 target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 list(APPEND CMAKE_PREFIX_PATH "dependencies/GLFW/lib/cmake")
