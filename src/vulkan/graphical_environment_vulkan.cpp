@@ -88,7 +88,14 @@ namespace VulkanImpl
     void GraphicalEnvironment::load_shader(const std::string& file, VkShaderStageFlagBits stage) {
         ShaderLoader loader = {file, _device};
         auto shader = loader.load_shader_module(stage);
+        _loaded_shaders.push_back(std::move(shader));
         std::clog << "shader " << file << " loaded" << std::endl;
+    }
+
+    void GraphicalEnvironment::init_pipeline() {
+        _pipeline = std::make_unique<RayTracingPipeline>(_device);
+        _pipeline->init(_loaded_shaders);
+        std::cerr << "Pipeline initialized" << std::endl;
     }
 
 } // namespace

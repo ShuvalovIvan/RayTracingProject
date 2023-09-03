@@ -15,6 +15,7 @@ public:
     GraphicalEnvironment() {}
     ~GraphicalEnvironment() override {
         std::cerr << "Tearing down" << std::endl;
+        vkDestroySurfaceKHR(_instance, _surface, nullptr);
         vkDestroyInstance(_instance, 0);
         glfwDestroyWindow(_window);
         glfwTerminate();
@@ -26,7 +27,11 @@ public:
 
     void load_preconfigured_shapes() override {
         load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     }
+
+    // Separate init that requires the shaders to be loaded.
+    void init_pipeline();
 
 private:
     void window_init();
@@ -35,8 +40,9 @@ private:
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
     VkSurfaceKHR _surface;
-    RayTracingPipeline _pipeline;
+    std::unique_ptr<RayTracingPipeline> _pipeline;
     Device _device;
+    std::vector<VkPipelineShaderStageCreateInfo> _loaded_shaders;
 };
 
 }  // namespace

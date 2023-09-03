@@ -1,13 +1,32 @@
 #pragma once
 
+#include <vector>
+
+#include <vulkan/vulkan.h>
+
+#include "vulkan/device.h"
+
 
 namespace VulkanImpl {
 
 class RayTracingPipeline {
 public:
-    RayTracingPipeline() {}
+    RayTracingPipeline(const Device& device) : _device(device) {}
+    ~RayTracingPipeline() {
+        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
+        vkDestroyRenderPass(_device.device(), _render_pass, nullptr);
+    }
 
-    void add_shader_stage() {}
+    void init(const std::vector<VkPipelineShaderStageCreateInfo>& loaded_shaders);
+
+private:
+    void init_render_pass();
+    void init_graphics_pipeline(const std::vector<VkPipelineShaderStageCreateInfo>& loaded_shaders);
+
+    const Device& _device;
+	VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;
+    VkRenderPass _render_pass = VK_NULL_HANDLE;
+    VkPipeline _pipeline = VK_NULL_HANDLE;
 };
 
 }  // namespace

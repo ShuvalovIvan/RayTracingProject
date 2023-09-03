@@ -8,6 +8,7 @@ protected:
     void SetUp() override {
         _scene.init();
         _scene.load_preconfigured_shapes();
+        _scene.init_pipeline();
     }
 
     void TearDown() override {}

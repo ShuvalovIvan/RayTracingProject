@@ -239,7 +239,7 @@ void Device::init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window) {
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swap_chain) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create swap chain!");
+        LOG_AND_THROW(std::runtime_error("failed to create swap chain!"));
     }
 
     vkGetSwapchainImagesKHR(_device, _swap_chain, &imageCount, nullptr);
