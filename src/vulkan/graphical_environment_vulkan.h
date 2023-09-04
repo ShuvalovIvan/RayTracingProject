@@ -6,6 +6,7 @@
 #include "device.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
+#include "validation.h"
 
 namespace VulkanImpl {
 
@@ -15,11 +16,14 @@ public:
     GraphicalEnvironment() {}
     ~GraphicalEnvironment() override {
         std::cerr << "Tearing down" << std::endl;
+        _validation.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         vkDestroyInstance(_instance, 0);
         glfwDestroyWindow(_window);
         glfwTerminate();
     }
+
+    void enable_validation();
 
     void init() override;
 
@@ -33,6 +37,8 @@ public:
     // Separate init that requires the shaders to be loaded.
     void init_pipeline();
 
+    void dump_device_info() const;
+
 private:
     void window_init();
     void surface_init();
@@ -43,6 +49,7 @@ private:
     std::unique_ptr<RayTracingPipeline> _pipeline;
     Device _device;
     std::vector<VkPipelineShaderStageCreateInfo> _loaded_shaders;
+    std::unique_ptr<Validation> _validation;
 };
 
 }  // namespace

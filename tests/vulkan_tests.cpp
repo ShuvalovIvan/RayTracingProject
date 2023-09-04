@@ -6,8 +6,10 @@
 class RayTracingFixture : public ::testing::Test {
 protected:
     void SetUp() override {
+        _scene.enable_validation();
         _scene.init();
         _scene.load_preconfigured_shapes();
+        _scene.dump_device_info();
         _scene.init_pipeline();
     }
 

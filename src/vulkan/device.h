@@ -24,6 +24,10 @@ public:
         return _device;
     }
 
+    VkPhysicalDevice physical_device() const {
+        return _physical_device;
+    }
+
     VkFormat format() const {
         return _swap_chain_image_format;
     }

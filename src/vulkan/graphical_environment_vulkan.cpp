@@ -9,6 +9,10 @@
 namespace VulkanImpl
 {
 
+    void GraphicalEnvironment::enable_validation() {
+        _validation = std::make_unique<Validation>();
+    }
+
     void GraphicalEnvironment::init()
     {
         std::clog << "Init Vulkan" << std::endl;
@@ -40,19 +44,28 @@ namespace VulkanImpl
         if (glfwExtensionCount <= 0) {
             LOG_AND_THROW(std::runtime_error("No instance extensions found"));
         }
-        std::clog << "Extensions found with GLFW: " << glfwExtensionCount << " ";
-        std::copy(&glfwExtensions[0], &glfwExtensions[glfwExtensionCount], std::ostream_iterator<const char *>(std::clog, "\n"));
+        std::vector<const char*> extensions;
+        std::copy(&glfwExtensions[0], &glfwExtensions[glfwExtensionCount], back_inserter(extensions));
+
+        if (_validation != nullptr) {
+            _validation->append_extensions(&extensions);
+        }
+        std::clog << "Extensions found with GLFW: " << extensions.size() << " ";
+        std::copy(extensions.begin(), extensions.end(), std::ostream_iterator<const char *>(std::clog, "\n"));
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
-        createInfo.enabledExtensionCount = glfwExtensionCount;
-        createInfo.ppEnabledExtensionNames = glfwExtensions;
+        createInfo.enabledExtensionCount = extensions.size();
+        createInfo.ppEnabledExtensionNames = &extensions[0];
 
         if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &_instance)) {
             LOG_AND_THROW(std::runtime_error("create instance"));
         }
         std::clog << "Instance created" << std::endl;
+        if (_validation != nullptr) {
+            _validation->init(_instance);
+        }       
 
         window_init();
         std::clog << "Window initialized" << std::endl;
@@ -96,6 +109,22 @@ namespace VulkanImpl
         _pipeline = std::make_unique<RayTracingPipeline>(_device);
         _pipeline->init(_loaded_shaders);
         std::cerr << "Pipeline initialized" << std::endl;
+    }
+
+    void GraphicalEnvironment::dump_device_info() const {
+        VkPhysicalDeviceMemoryProperties properties;
+        vkGetPhysicalDeviceMemoryProperties(_device.physical_device(), &properties);
+        std::clog << "Mem types: ";
+        for (int i = 0; i < properties.memoryTypeCount; ++i) {
+            std::clog << properties.memoryTypes[i].heapIndex << " ";
+        }
+        std::clog << std::endl;
+
+        std::clog << "Heaps: ";
+        for (int i = 0; i < properties.memoryHeapCount; ++i) {
+            std::clog << properties.memoryHeaps[i].size << " ";
+        }
+        std::clog << std::endl;
     }
 
 } // namespace

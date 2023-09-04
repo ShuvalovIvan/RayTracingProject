@@ -25,6 +25,8 @@ VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(VkShaderStageFl
     module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     module_create_info.codeSize = buffer.size();
     module_create_info.pCode = reinterpret_cast<const uint32_t *>(buffer.data());
+    module_create_info.flags = 0;
+    module_create_info.pNext = nullptr;
 
     if (VK_SUCCESS != vkCreateShaderModule(_device.device(), &module_create_info, nullptr, &_shader_module))
     {
@@ -36,6 +38,9 @@ VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(VkShaderStageFl
     stage_create_info.stage = stage;
     stage_create_info.module = _shader_module;
     stage_create_info.pName = "main";
+    stage_create_info.pNext = nullptr;
+    stage_create_info.flags = 0;
+    stage_create_info.pSpecializationInfo = nullptr;
 
     return stage_create_info;
 }
