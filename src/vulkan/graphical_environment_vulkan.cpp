@@ -3,6 +3,8 @@
 
 #include "graphical_environment_vulkan.h"
 
+#include <bitset>
+
 #include "shader_loader.h"
 
 
@@ -71,7 +73,8 @@ namespace VulkanImpl
         std::clog << "Window initialized" << std::endl;
         surface_init();
         std::clog << "Surface initialized" << std::endl;
-        _device.init(_instance, _surface, _window);
+        _device = std::make_unique<Device>();
+        _device->init(_instance, _surface, _window);
         std::cerr << "Vulkan initialized" << std::endl;
     }
 
@@ -99,30 +102,30 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::load_shader(const std::string& file, VkShaderStageFlagBits stage) {
-        ShaderLoader loader = {file, _device};
+        ShaderLoader loader = {file, *_device.get()};
         auto shader = loader.load_shader_module(stage);
         _loaded_shaders.push_back(std::move(shader));
         std::clog << "shader " << file << " loaded" << std::endl;
     }
 
     void GraphicalEnvironment::init_pipeline() {
-        _pipeline = std::make_unique<RayTracingPipeline>(_device);
+        _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
         _pipeline->init(_loaded_shaders);
         std::cerr << "Pipeline initialized" << std::endl;
     }
 
     void GraphicalEnvironment::dump_device_info() const {
         VkPhysicalDeviceMemoryProperties properties;
-        vkGetPhysicalDeviceMemoryProperties(_device.physical_device(), &properties);
+        vkGetPhysicalDeviceMemoryProperties(_device->physical_device(), &properties);
         std::clog << "Mem types: ";
         for (int i = 0; i < properties.memoryTypeCount; ++i) {
-            std::clog << properties.memoryTypes[i].heapIndex << " ";
+            std::clog << std::bitset<8>(properties.memoryTypes[i].propertyFlags) << " : " << properties.memoryTypes[i].heapIndex << " ";
         }
         std::clog << std::endl;
 
         std::clog << "Heaps: ";
         for (int i = 0; i < properties.memoryHeapCount; ++i) {
-            std::clog << properties.memoryHeaps[i].size << " ";
+            std::clog << std::bitset<8>(properties.memoryHeaps[i].flags) << " : " << properties.memoryHeaps[i].size << " ";
         }
         std::clog << std::endl;
     }

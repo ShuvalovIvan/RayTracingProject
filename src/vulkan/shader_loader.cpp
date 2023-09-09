@@ -1,5 +1,7 @@
 #include "shader_loader.h"
 
+#include <assert.h>
+
 #include "graphical_environment.h"
 
 namespace VulkanImpl
@@ -15,11 +17,16 @@ VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(VkShaderStageFl
     }
 
     const auto fileSize = static_cast<size_t>(file.tellg());
+    assert(fileSize > 1);
     std::vector<char> buffer(fileSize);
 
     file.seekg(0);
     file.read(buffer.data(), fileSize);
+    if (!file) {
+        LOG_AND_THROW(std::runtime_error("failed to read '" + file.gcount()));
+    }
     file.close();
+    assert(!buffer.empty());
 
     VkShaderModuleCreateInfo module_create_info{};
     module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

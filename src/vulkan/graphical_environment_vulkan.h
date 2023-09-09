@@ -16,11 +16,16 @@ public:
     GraphicalEnvironment() {}
     ~GraphicalEnvironment() override {
         std::cerr << "Tearing down" << std::endl;
-        _validation.reset();
+        _pipeline.reset();
+        _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
+        _validation.reset();
         vkDestroyInstance(_instance, 0);
+        std::cerr << "Instance deleted" << std::endl;
         glfwDestroyWindow(_window);
+        std::cerr << "Window deleted" << std::endl;
         glfwTerminate();
+        std::cerr << "Environment termninated" << std::endl;
     }
 
     void enable_validation();
@@ -30,8 +35,8 @@ public:
     void load_shader(const std::string& file, VkShaderStageFlagBits stage);
 
     void load_preconfigured_shapes() override {
-        load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        //load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        //load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     // Separate init that requires the shaders to be loaded.
@@ -47,7 +52,7 @@ private:
     GLFWwindow* _window = nullptr;
     VkSurfaceKHR _surface;
     std::unique_ptr<RayTracingPipeline> _pipeline;
-    Device _device;
+    std::unique_ptr<Device> _device;
     std::vector<VkPipelineShaderStageCreateInfo> _loaded_shaders;
     std::unique_ptr<Validation> _validation;
 };

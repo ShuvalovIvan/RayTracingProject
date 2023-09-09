@@ -1,5 +1,7 @@
 #include "ray_tracing_pipeline.h"
 
+#include <assert.h>
+
 #include "graphical_environment.h"
 
 namespace VulkanImpl {
@@ -50,9 +52,9 @@ void RayTracingPipeline::init_render_pass() {
 }
 
 void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShaderStageCreateInfo>& loaded_shaders) {
-    if (loaded_shaders.empty()) {
-        LOG_AND_THROW(std::runtime_error("No shaders loaded"));
-    }
+    // if (loaded_shaders.empty()) {
+    //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
+    // }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -73,6 +75,8 @@ void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShad
 	viewport.height = static_cast<float>(_device.swap_chain_extent().height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
+    assert(viewport.width > 1);
+    assert(viewport.height > 1);
 
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
@@ -135,7 +139,7 @@ void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShad
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = loaded_shaders.size();
-    pipelineInfo.pStages = &loaded_shaders[0];
+    pipelineInfo.pStages = loaded_shaders.data();
     pipelineInfo.pNext = nullptr;    
 
     pipelineInfo.pVertexInputState = &vertexInputInfo;

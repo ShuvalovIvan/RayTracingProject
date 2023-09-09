@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(raytracing_project)
 set(PROJECT_LIB raytracing_project_lib)
-add_library(${PROJECT_LIB} "")
+add_library(${PROJECT_LIB} STATIC "")
 message(STATUS "Project name ${CMAKE_PROJECT_NAME}, lib ${PROJECT_LIB}")
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -15,9 +15,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(MSVC)
   # Enable parallel builds by default on MSVC
   string(APPEND CMAKE_C_FLAGS " /MP")
+  #string(APPEND CMAKE_C_FLAGS " /fsanitize=address")
   string(APPEND CMAKE_CXX_FLAGS " /MP")
+  #string(APPEND CMAKE_CXX_FLAGS " /fsanitize=address")
   set(CMAKE_EXE_LINKER_FLAGS
       "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:\"mfc110d\"")
+  #string(APPEND CMAKE_EXE_LINKER_FLAGS " /fsanitize=address")
 endif()
 
 message(STATUS "Source dir = ${CMAKE_SOURCE_DIR}")
@@ -50,6 +53,9 @@ endif(UNIX)
 # VulkanSDK package
 #
 macro(_add_package_VulkanSDK)
+  set(ENV{Vulkan_LIBRARY} "$ENV{VK_SDK_PATH}/Lib")
+  set(ENV{Vulkan_INCLUDE_DIR} "$ENV{VK_SDK_PATH}/Include")
+  message(STATUS "Vulkan lib $ENV{Vulkan_LIBRARY} $ENV{Vulkan_INCLUDE_DIR}")
   find_package(Vulkan REQUIRED
     COMPONENTS glslc glslangValidator shaderc_combined)
   

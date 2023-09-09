@@ -16,6 +16,7 @@ public:
     ~Device() {
         vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
         vkDestroyDevice(_device, 0);
+        std::clog << "Device destroyed" << std::endl;
     }
 
     void init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window);

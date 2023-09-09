@@ -24,6 +24,7 @@ Validation::~Validation() {
         if (func != nullptr) {
             func(_instance, _debug_messenger, nullptr);
         }
+        std::clog << "Validation deleted" << std::endl;
     }
 }
 
