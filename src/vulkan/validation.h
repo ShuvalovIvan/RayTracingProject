@@ -17,6 +17,8 @@ public:
 
     void append_extensions(std::vector<const char*> *extensions);
 
+    std::vector<const char*> supported_layers();
+
 private:
     bool check_validation_layer_support();
 

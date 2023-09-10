@@ -12,6 +12,7 @@ foreach(shader ${shader_files})
 	get_filename_component(FILENAME ${shader} NAME)
 	set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 	add_custom_command(OUTPUT ${output_dir}/${FILENAME}.spv
+	    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} ${shader} -V
 		COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${shader} -o ${output_dir}/${FILENAME}.spv
 		DEPENDS ${shader}
 		COMMENT "Compiling ${FILENAME}")

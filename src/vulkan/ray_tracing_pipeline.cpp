@@ -6,7 +6,7 @@
 
 namespace VulkanImpl {
 
-void RayTracingPipeline::init(const std::vector<VkPipelineShaderStageCreateInfo>& loaded_shaders) {
+void RayTracingPipeline::init(std::vector<VkPipelineShaderStageCreateInfo> loaded_shaders) {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0; // Optional
@@ -51,7 +51,7 @@ void RayTracingPipeline::init_render_pass() {
     }    
 }
 
-void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShaderStageCreateInfo>& loaded_shaders) {
+void RayTracingPipeline::init_graphics_pipeline(std::vector<VkPipelineShaderStageCreateInfo> loaded_shaders) {
     // if (loaded_shaders.empty()) {
     //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
     // }
@@ -89,12 +89,15 @@ void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShad
 	viewportState.scissorCount = 1;
 	viewportState.pScissors = &scissor;
 
-    VkPipelineRasterizationStateCreateInfo raster_info = {};
-    raster_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    raster_info.polygonMode = VK_POLYGON_MODE_FILL;
-    raster_info.cullMode = VK_CULL_MODE_NONE;
-    raster_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    raster_info.lineWidth = 1.0f;
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -145,7 +148,7 @@ void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShad
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &raster_info;
+    pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = nullptr; // Optional
     pipelineInfo.pColorBlendState = &colorBlending;
@@ -153,6 +156,8 @@ void RayTracingPipeline::init_graphics_pipeline(const std::vector<VkPipelineShad
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     pipelineInfo.basePipelineIndex = -1; // Optional
 
+    assert(_pipeline_layout);
+    assert(_render_pass);
     pipelineInfo.layout = _pipeline_layout;
     pipelineInfo.renderPass = _render_pass;
     pipelineInfo.subpass = 0;

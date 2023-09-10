@@ -61,6 +61,10 @@ namespace VulkanImpl
         createInfo.enabledExtensionCount = extensions.size();
         createInfo.ppEnabledExtensionNames = &extensions[0];
 
+        auto layers = _validation->supported_layers();
+        createInfo.enabledLayerCount	= layers.size();
+        createInfo.ppEnabledLayerNames	= layers.data();
+
         if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &_instance)) {
             LOG_AND_THROW(std::runtime_error("create instance"));
         }
@@ -110,7 +114,7 @@ namespace VulkanImpl
 
     void GraphicalEnvironment::init_pipeline() {
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
-        _pipeline->init(_loaded_shaders);
+        _pipeline->init(std::move(_loaded_shaders));
         std::cerr << "Pipeline initialized" << std::endl;
     }
 

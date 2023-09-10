@@ -69,6 +69,10 @@ bool Validation::check_validation_layer_support() {
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
+    for (const auto& layer : availableLayers) {
+        std::clog << layer.layerName << ": " << layer.description << std::endl;
+    }
+
     for (const char* layerName : _validation_layers) {
         bool layerFound = false;
 
@@ -87,6 +91,13 @@ bool Validation::check_validation_layer_support() {
 
     _enabled = true;
     return true;
+}
+
+std::vector<const char*> Validation::supported_layers() {
+    if (check_validation_layer_support()) {
+        return _validation_layers;
+    }
+    return std::vector<const char*>();
 }
 
 }  // namespace

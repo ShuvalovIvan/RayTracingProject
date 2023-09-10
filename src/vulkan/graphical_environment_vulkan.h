@@ -35,8 +35,8 @@ public:
     void load_shader(const std::string& file, VkShaderStageFlagBits stage);
 
     void load_preconfigured_shapes() override {
-        //load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        //load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        load_shader("../../build/assets/shaders/triangle.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     }
 
     // Separate init that requires the shaders to be loaded.

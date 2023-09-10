@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -30,6 +31,7 @@ public:
     }
 
     VkFormat format() const {
+        assert(_swap_chain_image_format != VK_FORMAT_UNDEFINED);
         return _swap_chain_image_format;
     }
 
