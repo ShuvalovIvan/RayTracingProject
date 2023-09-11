@@ -6,21 +6,23 @@
 
 namespace VulkanImpl {
 
-void RayTracingPipeline::init(std::vector<VkPipelineShaderStageCreateInfo> loaded_shaders) {
+void RayTracingPipeline::init(ShaderModules& shader_modules)
+{
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+    pipelineLayoutInfo.setLayoutCount = 0;            // Optional
+    pipelineLayoutInfo.pSetLayouts = nullptr;         // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 0;    // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-    if (vkCreatePipelineLayout(_device.device(), &pipelineLayoutInfo, nullptr, &_pipeline_layout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(_device.device(), &pipelineLayoutInfo, nullptr, &_pipeline_layout) != VK_SUCCESS)
+    {
         LOG_AND_THROW(std::runtime_error("failed to create pipeline layout!"));
     }
 
     init_render_pass();
 
-    init_graphics_pipeline(loaded_shaders);
+    init_graphics_pipeline(shader_modules);
 }
 
 void RayTracingPipeline::init_render_pass() {
@@ -29,6 +31,10 @@ void RayTracingPipeline::init_render_pass() {
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
@@ -48,10 +54,11 @@ void RayTracingPipeline::init_render_pass() {
 
     if (vkCreateRenderPass(_device.device(), &renderPassInfo, nullptr, &_render_pass) != VK_SUCCESS) {
         LOG_AND_THROW(std::runtime_error("failed to create render pass!"));
-    }    
+    }
 }
 
-void RayTracingPipeline::init_graphics_pipeline(std::vector<VkPipelineShaderStageCreateInfo> loaded_shaders) {
+void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
+{
     // if (loaded_shaders.empty()) {
     //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
     // }
@@ -139,11 +146,13 @@ void RayTracingPipeline::init_graphics_pipeline(std::vector<VkPipelineShaderStag
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
+    auto loaded_shaders = shader_modules.load_all_stages();
+
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = loaded_shaders.size();
     pipelineInfo.pStages = loaded_shaders.data();
-    pipelineInfo.pNext = nullptr;    
+    pipelineInfo.pNext = nullptr;
 
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;

@@ -6,6 +6,7 @@
 #include "device.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
+#include "shader_modules.h"
 #include "validation.h"
 
 namespace VulkanImpl {
@@ -17,6 +18,7 @@ public:
     ~GraphicalEnvironment() override {
         std::cerr << "Tearing down" << std::endl;
         _pipeline.reset();
+        _shader_modules.reset();
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         _validation.reset();
@@ -53,7 +55,7 @@ private:
     VkSurfaceKHR _surface;
     std::unique_ptr<RayTracingPipeline> _pipeline;
     std::unique_ptr<Device> _device;
-    std::vector<VkPipelineShaderStageCreateInfo> _loaded_shaders;
+    std::unique_ptr<ShaderModules> _shader_modules;
     std::unique_ptr<Validation> _validation;
 };
 

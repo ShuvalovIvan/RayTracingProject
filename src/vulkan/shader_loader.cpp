@@ -7,7 +7,7 @@
 namespace VulkanImpl
 {
 
-VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(VkShaderStageFlagBits stage)
+VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module()
 {
     std::ifstream file(_file, std::ios::ate | std::ios::binary);
 
@@ -42,7 +42,7 @@ VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(VkShaderStageFl
 
     VkPipelineShaderStageCreateInfo stage_create_info{};
     stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stage_create_info.stage = stage;
+    stage_create_info.stage = _stage;
     stage_create_info.module = _shader_module;
     stage_create_info.pName = "main";
     stage_create_info.pNext = nullptr;

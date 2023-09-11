@@ -7,13 +7,14 @@
 #include <string>
 #include <vector>
 
-#include "device.h"
+#include "vulkan/device.h"
 
 namespace VulkanImpl {
 
 class ShaderLoader {
 public:
-    ShaderLoader(const std::string& file, Device &device) : _file(file), _device(device) {}
+    ShaderLoader(const std::string &file, const Device &device, VkShaderStageFlagBits stage)
+        : _file(file), _device(device), _stage(stage) {}
 
     ~ShaderLoader()
     {
@@ -23,13 +24,13 @@ public:
         }
     }
 
-    VkPipelineShaderStageCreateInfo load_shader_module(VkShaderStageFlagBits stage);
+    VkPipelineShaderStageCreateInfo load_shader_module();
 
 private:
     const std::string _file;
     const Device &_device;
-	VkShaderModule _shader_module = nullptr;
+    const VkShaderStageFlagBits _stage;
+    VkShaderModule _shader_module = nullptr;
 };
-
 
 }  // namespace

@@ -71,7 +71,7 @@ namespace VulkanImpl
         std::clog << "Instance created" << std::endl;
         if (_validation != nullptr) {
             _validation->init(_instance);
-        }       
+        }
 
         window_init();
         std::clog << "Window initialized" << std::endl;
@@ -79,6 +79,7 @@ namespace VulkanImpl
         std::clog << "Surface initialized" << std::endl;
         _device = std::make_unique<Device>();
         _device->init(_instance, _surface, _window);
+        _shader_modules = std::make_unique<ShaderModules>(*_device);
         std::cerr << "Vulkan initialized" << std::endl;
     }
 
@@ -106,15 +107,12 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::load_shader(const std::string& file, VkShaderStageFlagBits stage) {
-        ShaderLoader loader = {file, *_device.get()};
-        auto shader = loader.load_shader_module(stage);
-        _loaded_shaders.push_back(std::move(shader));
-        std::clog << "shader " << file << " loaded" << std::endl;
+        _shader_modules->add_shader_module(file, stage);
     }
 
     void GraphicalEnvironment::init_pipeline() {
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
-        _pipeline->init(std::move(_loaded_shaders));
+        _pipeline->init(*_shader_modules);
         std::cerr << "Pipeline initialized" << std::endl;
     }
 
