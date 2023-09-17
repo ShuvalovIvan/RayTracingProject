@@ -8,13 +8,16 @@
 
 #include "graphical_environment.h"
 
-
 namespace VulkanImpl {
 
 class Device {
 public:
     Device() {}
     ~Device() {
+        for (auto image_view : _swap_chain_image_views)
+        {
+            vkDestroyImageView(_device, image_view, nullptr);
+        }
         vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
         vkDestroyDevice(_device, 0);
         std::clog << "Device destroyed" << std::endl;
@@ -39,12 +42,18 @@ public:
         return _swap_chain_extent;
     }
 
+    std::vector<VkImageView> swap_chain_image_views() const {
+        return _swap_chain_image_views;
+    }
+
 private:
     void init_physical_device(VkInstance instance, VkSurfaceKHR surface);
 
     void init_logical_device();
 
     void init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window);
+
+    void init_image_views();
 
 	VkDevice _device = VK_NULL_HANDLE;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
@@ -54,6 +63,7 @@ private:
     std::vector<VkImage> _swap_chain_images;
     VkFormat _swap_chain_image_format = VK_FORMAT_UNDEFINED;
     VkExtent2D _swap_chain_extent;
+    std::vector<VkImageView> _swap_chain_image_views;
 };
 
 }  // namespace

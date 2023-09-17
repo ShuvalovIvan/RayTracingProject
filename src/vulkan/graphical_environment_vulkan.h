@@ -4,9 +4,11 @@
 #include <GLFW/glfw3.h>
 
 #include "device.h"
+#include "frame_buffer.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
 #include "shader_modules.h"
+#include "user_control.h"
 #include "validation.h"
 
 namespace VulkanImpl {
@@ -46,9 +48,13 @@ public:
 
     void dump_device_info() const;
 
+    void start_loop() override;
+
 private:
     void window_init();
     void surface_init();
+
+    void frame_buffers_init();
 
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
@@ -56,7 +62,9 @@ private:
     std::unique_ptr<RayTracingPipeline> _pipeline;
     std::unique_ptr<Device> _device;
     std::unique_ptr<ShaderModules> _shader_modules;
+    std::vector<FrameBuffer> _frame_buffers;
     std::unique_ptr<Validation> _validation;
+    UserControl _user_control;
 };
 
 }  // namespace

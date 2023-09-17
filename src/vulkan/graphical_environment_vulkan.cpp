@@ -114,6 +114,18 @@ namespace VulkanImpl
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
         _pipeline->init(*_shader_modules);
         std::cerr << "Pipeline initialized" << std::endl;
+
+        frame_buffers_init();
+    }
+
+    void GraphicalEnvironment::frame_buffers_init() {
+        auto image_views = _device->swap_chain_image_views();
+        for (auto image_view : image_views) {
+            FrameBuffer frame_buffer(*_device);
+            frame_buffer.init(_pipeline->render_pass(), image_view);
+            _frame_buffers.push_back(std::move(frame_buffer));
+        }
+        std::cerr << "Frame buffers initialized" << std::endl;
     }
 
     void GraphicalEnvironment::dump_device_info() const {
@@ -131,5 +143,10 @@ namespace VulkanImpl
         }
         std::clog << std::endl;
     }
+
+    void GraphicalEnvironment::start_loop() {
+
+    }
+
 
 } // namespace

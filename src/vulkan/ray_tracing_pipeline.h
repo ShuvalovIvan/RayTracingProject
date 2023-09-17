@@ -19,6 +19,10 @@ public:
 
     void init(ShaderModules& shader_modules);
 
+    VkRenderPass render_pass() const {
+        return _render_pass;
+    }
+
 private:
     void init_render_pass();
     void init_graphics_pipeline(ShaderModules &shader_modules);

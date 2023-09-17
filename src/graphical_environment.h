@@ -13,8 +13,10 @@ protected:
     virtual ~GraphicalEnvironment() {}
 
     GraphicalEnvironment(const GraphicalEnvironment&) = delete;
-    GraphicalEnvironment& operator=(const GraphicalEnvironment&) = delete; 
+    GraphicalEnvironment& operator=(const GraphicalEnvironment&) = delete;
 
     virtual void init() = 0;
     virtual void load_preconfigured_shapes() = 0;
+
+    virtual void start_loop() = 0;
 };
