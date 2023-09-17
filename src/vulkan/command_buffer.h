@@ -41,10 +41,19 @@ namespace VulkanImpl
             }
         }
 
+        VkCommandBuffer command_buffer() const {
+            return _command_buffer;
+        }
+
+        void CommandBuffer::reset_record_command_buffer(VkRenderPass render_pass,
+                                                        VkFramebuffer frame_buffer,
+                                                        VkExtent2D swap_chain_extent,
+                                                        VkPipeline pipeline);
+
     private:
         const Device& _device;
         VkCommandPool _command_pool;
-        VkCommandBuffer _command_buffer;
+        VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
     };
 
 } // namespace

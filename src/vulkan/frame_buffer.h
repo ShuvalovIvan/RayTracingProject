@@ -9,9 +9,15 @@ namespace VulkanImpl
     {
     public:
         FrameBuffer(const Device& device) : _device(device) {}
+        FrameBuffer(FrameBuffer&& other) : _device(other._device), _frame_buffer(other._frame_buffer) {
+            other._frame_buffer = VK_NULL_HANDLE;
+        }
 
-        ~FrameBuffer() {
-            vkDestroyFramebuffer(_device.device(), _frame_buffer, nullptr);
+        ~FrameBuffer()
+        {
+            if (_frame_buffer != VK_NULL_HANDLE) {
+                vkDestroyFramebuffer(_device.device(), _frame_buffer, nullptr);
+            }
         }
 
         void init(VkRenderPass render_pass, VkImageView swap_chain_image_view)
@@ -33,9 +39,16 @@ namespace VulkanImpl
             }
         }
 
+        VkFramebuffer frame_buffer() {
+            return _frame_buffer;
+        }
+
     private:
-        const Device& _device;
-        VkFramebuffer _frame_buffer;
+        FrameBuffer(const FrameBuffer&) = delete;
+        FrameBuffer &operator=(const FrameBuffer&) = delete;
+
+        const Device &_device;
+        VkFramebuffer _frame_buffer = VK_NULL_HANDLE;
     };
 
 } // namespace

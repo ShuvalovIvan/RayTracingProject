@@ -33,7 +33,7 @@ namespace VulkanImpl
             LOG_AND_THROW(std::runtime_error("glfwVulkanSupported() failed"));
         }
 
-        VkApplicationInfo appInfo;
+        VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Vulkan Project";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -79,7 +79,7 @@ namespace VulkanImpl
         std::clog << "Surface initialized" << std::endl;
         _device = std::make_unique<Device>();
         _device->init(_instance, _surface, _window);
-        _shader_modules = std::make_unique<ShaderModules>(*_device);
+        _shader_modules = std::make_unique<ShaderModules>(*_device.get());
         std::cerr << "Vulkan initialized" << std::endl;
     }
 
@@ -117,18 +117,36 @@ namespace VulkanImpl
 
         frame_buffers_init();
 
-        _command_buffer = std::make_unique<CommandBuffer>(*_device);
+        _command_buffer = std::make_unique<CommandBuffer>(*_device.get());
         _command_buffer->init(_surface);
+
+        synchronization_init();
     }
 
     void GraphicalEnvironment::frame_buffers_init() {
         auto image_views = _device->swap_chain_image_views();
         for (auto image_view : image_views) {
-            FrameBuffer frame_buffer(*_device);
+            _frame_buffers.emplace_back(*_device.get());
+            FrameBuffer& frame_buffer = _frame_buffers.back();
             frame_buffer.init(_pipeline->render_pass(), image_view);
-            _frame_buffers.push_back(std::move(frame_buffer));
         }
         std::cerr << "Frame buffers initialized" << std::endl;
+    }
+
+    void GraphicalEnvironment::synchronization_init() {
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        if (vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_image_available_semaphore) != VK_SUCCESS ||
+            vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_render_finished_semaphore) != VK_SUCCESS ||
+            vkCreateFence(_device->device(), &fenceInfo, nullptr, &_in_flight_fence) != VK_SUCCESS)
+        {
+            LOG_AND_THROW(std::runtime_error("failed to create synchronization objects for a frame!"));
+        }
     }
 
     void GraphicalEnvironment::dump_device_info() const {
@@ -147,9 +165,57 @@ namespace VulkanImpl
         std::clog << std::endl;
     }
 
-    void GraphicalEnvironment::start_loop() {
+    void GraphicalEnvironment::start_interactive_loop() {
 
     }
 
+    void GraphicalEnvironment::draw_frame() {
+        vkWaitForFences(_device->device(), 1, &_in_flight_fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(_device->device(), 1, &_in_flight_fence);
+
+        uint32_t imageIndex;
+        vkAcquireNextImageKHR(_device->device(), _device->swap_chain(), UINT64_MAX, _image_available_semaphore, VK_NULL_HANDLE, &imageIndex);
+        assert(imageIndex < _frame_buffers.size());
+        auto& frame_buffer = _frame_buffers[imageIndex];
+
+        _command_buffer->reset_record_command_buffer(_pipeline->render_pass(), frame_buffer.frame_buffer(),
+            _device->swap_chain_extent(), _pipeline->pipeline());
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        VkSemaphore waitSemaphores[] = {_image_available_semaphore};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
+
+        VkCommandBuffer command_buffers[] = { _command_buffer->command_buffer() };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = command_buffers;
+
+        VkSemaphore signalSemaphores[] = { _render_finished_semaphore };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+
+        if (vkQueueSubmit(_device->queue(), 1, &submitInfo, _in_flight_fence) != VK_SUCCESS)
+        {
+            LOG_AND_THROW(std::runtime_error("failed to submit draw command buffer!"));
+        }
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores;
+
+        VkSwapchainKHR swapChains[] = { _device->swap_chain() };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+
+        presentInfo.pImageIndices = &imageIndex;
+
+        vkQueuePresentKHR(_device->present_queue(), &presentInfo);
+    }
 
 } // namespace

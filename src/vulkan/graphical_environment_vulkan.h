@@ -23,6 +23,10 @@ public:
         _pipeline.reset();
         _shader_modules.reset();
         _command_buffer.reset();
+        vkDestroySemaphore(_device->device(), _render_finished_semaphore, nullptr);
+        vkDestroySemaphore(_device->device(), _image_available_semaphore, nullptr);
+        vkDestroyFence(_device->device(), _in_flight_fence, nullptr);
+        _frame_buffers.clear();
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         _validation.reset();
@@ -50,13 +54,16 @@ public:
 
     void dump_device_info() const;
 
-    void start_loop() override;
+    void start_interactive_loop() override;
+
+    void draw_frame();
 
 private:
     void window_init();
     void surface_init();
 
     void frame_buffers_init();
+    void synchronization_init();
 
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
@@ -68,6 +75,10 @@ private:
     std::unique_ptr<CommandBuffer> _command_buffer;
     std::unique_ptr<Validation> _validation;
     UserControl _user_control;
+
+    VkSemaphore _image_available_semaphore;
+    VkSemaphore _render_finished_semaphore;
+    VkFence _in_flight_fence;
 };
 
 }  // namespace

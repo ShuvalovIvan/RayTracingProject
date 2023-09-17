@@ -18,8 +18,9 @@ struct SwapChainSupportDetails {
 
 void Device::init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window) {
     init_physical_device(instance, surface);
-    init_logical_device();
+    init_logical_device(surface);
     init_swap_chain(surface, window);
+    init_image_views();
 }
 
 void Device::init_physical_device(VkInstance instance, VkSurfaceKHR surface) {
@@ -62,7 +63,7 @@ void Device::init_physical_device(VkInstance instance, VkSurfaceKHR surface) {
     }
 }
 
-void Device::init_logical_device() {
+void Device::init_logical_device(VkSurfaceKHR surface) {
     const char* const extension_names[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -89,6 +90,9 @@ void Device::init_logical_device() {
     }
 
     vkGetDeviceQueue(_device, _queue_family_index, 0, &_queue);
+
+    QueueFamilyIndices indices = findQueueFamilies(surface);
+    vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_present_queue);
 }
 
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {

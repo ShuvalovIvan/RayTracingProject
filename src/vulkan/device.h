@@ -50,6 +50,10 @@ public:
         return _swap_chain_image_format;
     }
 
+    VkSwapchainKHR swap_chain() const {
+        return _swap_chain;
+    }
+
     VkExtent2D swap_chain_extent() const {
         return _swap_chain_extent;
     }
@@ -58,12 +62,20 @@ public:
         return _swap_chain_image_views;
     }
 
+    VkQueue queue() const {
+        return _queue;
+    }
+
+    VkQueue present_queue() {
+        return _present_queue;
+    }
+
     QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface) const;
 
 private:
     void init_physical_device(VkInstance instance, VkSurfaceKHR surface);
 
-    void init_logical_device();
+    void init_logical_device(VkSurfaceKHR surface);
 
     void init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window);
 
@@ -72,6 +84,7 @@ private:
 	VkDevice _device = VK_NULL_HANDLE;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkQueue _queue = VK_NULL_HANDLE;
+    VkQueue _present_queue = VK_NULL_HANDLE;
     uint32_t _queue_family_index = 0;
     VkSwapchainKHR _swap_chain = VK_NULL_HANDLE;
     std::vector<VkImage> _swap_chain_images;

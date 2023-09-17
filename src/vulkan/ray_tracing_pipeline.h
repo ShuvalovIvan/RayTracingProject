@@ -23,6 +23,10 @@ public:
         return _render_pass;
     }
 
+    VkPipeline pipeline() const {
+        return _pipeline;
+    }
+
 private:
     void init_render_pass();
     void init_graphics_pipeline(ShaderModules &shader_modules);

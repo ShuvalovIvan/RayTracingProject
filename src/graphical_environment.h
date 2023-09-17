@@ -18,5 +18,5 @@ protected:
     virtual void init() = 0;
     virtual void load_preconfigured_shapes() = 0;
 
-    virtual void start_loop() = 0;
+    virtual void start_interactive_loop() = 0;
 };
