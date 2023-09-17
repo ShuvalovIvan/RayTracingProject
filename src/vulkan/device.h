@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -9,6 +10,17 @@
 #include "graphical_environment.h"
 
 namespace VulkanImpl {
+
+struct QueueFamilyIndices
+{
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+    bool isComplete()
+    {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+};
 
 class Device {
 public:
@@ -45,6 +57,8 @@ public:
     std::vector<VkImageView> swap_chain_image_views() const {
         return _swap_chain_image_views;
     }
+
+    QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface) const;
 
 private:
     void init_physical_device(VkInstance instance, VkSurfaceKHR surface);

@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
+#include "command_buffer.h"
 #include "device.h"
 #include "frame_buffer.h"
 #include "graphical_environment.h"
@@ -21,6 +22,7 @@ public:
         std::cerr << "Tearing down" << std::endl;
         _pipeline.reset();
         _shader_modules.reset();
+        _command_buffer.reset();
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         _validation.reset();
@@ -63,6 +65,7 @@ private:
     std::unique_ptr<Device> _device;
     std::unique_ptr<ShaderModules> _shader_modules;
     std::vector<FrameBuffer> _frame_buffers;
+    std::unique_ptr<CommandBuffer> _command_buffer;
     std::unique_ptr<Validation> _validation;
     UserControl _user_control;
 };

@@ -116,6 +116,9 @@ namespace VulkanImpl
         std::cerr << "Pipeline initialized" << std::endl;
 
         frame_buffers_init();
+
+        _command_buffer = std::make_unique<CommandBuffer>(*_device);
+        _command_buffer->init(_surface);
     }
 
     void GraphicalEnvironment::frame_buffers_init() {
