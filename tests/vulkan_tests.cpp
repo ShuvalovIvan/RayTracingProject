@@ -11,6 +11,7 @@ protected:
         _scene.load_preconfigured_shapes();
         _scene.dump_device_info();
         _scene.init_pipeline();
+        std::clog << "Test suite initialized" << std::endl;
     }
 
     void TearDown() override {}
@@ -19,4 +20,7 @@ protected:
 };
 
 TEST_F(RayTracingFixture, BasicVulkan) {
+    for (int i = 0; i < 100; ++i) {
+        _scene.draw_frame();
+    }
 }

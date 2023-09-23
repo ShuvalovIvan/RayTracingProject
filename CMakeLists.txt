@@ -44,7 +44,7 @@ if(WIN32)
     set_target_properties(${exename} PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
 endif(WIN32)
 
-if(UNIX) 
+if(UNIX)
   set(OS "linux")
   add_definitions(-DLINUX)
 endif(UNIX)
@@ -58,7 +58,7 @@ macro(_add_package_VulkanSDK)
   message(STATUS "Vulkan lib $ENV{Vulkan_LIBRARY} $ENV{Vulkan_INCLUDE_DIR}")
   find_package(Vulkan REQUIRED
     COMPONENTS glslc glslangValidator shaderc_combined)
-  
+
   if(Vulkan_FOUND)
       Message(STATUS "--> using package VulkanSDK (linking with ${Vulkan_LIBRARY})")
       get_directory_property(hasParent PARENT_DIRECTORY)
@@ -83,7 +83,7 @@ macro(_add_package_VulkanSDK)
 
       Message(STATUS "--> using Vulkan Headers from: ${vulkanHeaderDir}")
       include_directories(${vulkanHeaderDir})
-      set( vulkanHeaderFiles 
+      set( vulkanHeaderFiles
         "${vulkanHeaderDir}/vulkan/vulkan_core.h")
       LIST(APPEND PACKAGE_SOURCE_FILES ${vulkanHeaderFiles})
       source_group(Vulkan FILES ${vulkanHeaderFiles})
@@ -123,10 +123,12 @@ endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 add_subdirectory(assets)
 add_subdirectory(src)
+add_subdirectory(dependencies/tinyobjloader)
+add_subdirectory(dependencies/GLM)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
 target_compile_features(${PROJECT_LIB} PRIVATE cxx_std_17)
-target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/dependencies/GLM/glm)
 
 list(APPEND CMAKE_PREFIX_PATH "dependencies/GLFW/lib/cmake")
 find_package(glfw3 REQUIRED)
