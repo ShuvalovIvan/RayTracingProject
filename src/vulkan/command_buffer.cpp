@@ -5,7 +5,8 @@ namespace VulkanImpl
 
     void CommandBuffer::reset_record_command_buffer(
         VkRenderPass render_pass, VkFramebuffer frame_buffer,
-        VkExtent2D swap_chain_extent, VkPipeline pipeline)
+        VkExtent2D swap_chain_extent, VkPipeline pipeline,
+        VkBuffer vertex_buffer)
     {
         vkResetCommandBuffer(_command_buffer, /*VkCommandBufferResetFlagBits*/ 0);
 
@@ -45,6 +46,10 @@ namespace VulkanImpl
         scissor.offset = {0, 0};
         scissor.extent = swap_chain_extent;
         vkCmdSetScissor(_command_buffer, 0, 1, &scissor);
+
+        VkBuffer vertexBuffers[] = {vertex_buffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertexBuffers, offsets);
 
         vkCmdDraw(_command_buffer, 3, 1, 0, 0);
 

@@ -117,11 +117,11 @@ namespace VulkanImpl
 
         frame_buffers_init();
 
-        _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
-        _vertex_buffer->init();
-
         _command_buffer = std::make_unique<CommandBuffer>(*_device.get());
         _command_buffer->init(_surface);
+
+        _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
+        _vertex_buffer->init(_command_buffer->command_pool());
 
         synchronization_init();
     }
@@ -182,7 +182,8 @@ namespace VulkanImpl
         auto& frame_buffer = _frame_buffers[imageIndex];
 
         _command_buffer->reset_record_command_buffer(_pipeline->render_pass(), frame_buffer.frame_buffer(),
-            _device->swap_chain_extent(), _pipeline->pipeline());
+                                                     _device->swap_chain_extent(), _pipeline->pipeline(),
+                                                     _vertex_buffer->vertex_buffer());
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -201,7 +202,7 @@ namespace VulkanImpl
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(_device->queue(), 1, &submitInfo, _in_flight_fence) != VK_SUCCESS)
+        if (vkQueueSubmit(_device->graphics_queue(), 1, &submitInfo, _in_flight_fence) != VK_SUCCESS)
         {
             LOG_AND_THROW(std::runtime_error("failed to submit draw command buffer!"));
         }

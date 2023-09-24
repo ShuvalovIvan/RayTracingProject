@@ -89,7 +89,7 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
         LOG_AND_THROW(std::runtime_error("Logical device not created"));
     }
 
-    vkGetDeviceQueue(_device, _queue_family_index, 0, &_queue);
+    vkGetDeviceQueue(_device, _queue_family_index, 0, &_graphics_queue);
 
     QueueFamilyIndices indices = findQueueFamilies(surface);
     vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_present_queue);

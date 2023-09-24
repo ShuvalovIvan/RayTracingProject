@@ -62,8 +62,8 @@ public:
         return _swap_chain_image_views;
     }
 
-    VkQueue queue() const {
-        return _queue;
+    VkQueue graphics_queue() const {
+        return _graphics_queue;
     }
 
     VkQueue present_queue() {
@@ -83,7 +83,7 @@ private:
 
 	VkDevice _device = VK_NULL_HANDLE;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
-    VkQueue _queue = VK_NULL_HANDLE;
+    VkQueue _graphics_queue = VK_NULL_HANDLE;
     VkQueue _present_queue = VK_NULL_HANDLE;
     uint32_t _queue_family_index = 0;
     VkSwapchainKHR _swap_chain = VK_NULL_HANDLE;

@@ -45,10 +45,15 @@ namespace VulkanImpl
             return _command_buffer;
         }
 
+        VkCommandPool command_pool() const {
+            return _command_pool;
+        }
+
         void CommandBuffer::reset_record_command_buffer(VkRenderPass render_pass,
                                                         VkFramebuffer frame_buffer,
                                                         VkExtent2D swap_chain_extent,
-                                                        VkPipeline pipeline);
+                                                        VkPipeline pipeline,
+                                                        VkBuffer vertex_buffer);
 
     private:
         const Device& _device;
