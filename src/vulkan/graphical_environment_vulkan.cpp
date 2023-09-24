@@ -80,7 +80,9 @@ namespace VulkanImpl
         _device = std::make_unique<Device>();
         _device->init(_instance, _surface, _window);
         _shader_modules = std::make_unique<ShaderModules>(*_device.get());
-        std::cerr << "Vulkan initialized" << std::endl;
+
+        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
+        _descriptor_set_layout->init();
     }
 
     void GraphicalEnvironment::window_init() {
@@ -122,6 +124,9 @@ namespace VulkanImpl
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
         _vertex_buffer->init(_command_buffer->command_pool());
+
+        _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
+        _uniform_buffers->init();
 
         synchronization_init();
     }
