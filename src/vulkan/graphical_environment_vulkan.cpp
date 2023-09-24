@@ -117,6 +117,9 @@ namespace VulkanImpl
 
         frame_buffers_init();
 
+        _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
+        _vertex_buffer->init();
+
         _command_buffer = std::make_unique<CommandBuffer>(*_device.get());
         _command_buffer->init(_surface);
 

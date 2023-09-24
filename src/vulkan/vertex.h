@@ -12,6 +12,8 @@ namespace VulkanImpl
     class Vertex
     {
     public:
+        Vertex(glm::vec2 pos, glm::vec3 color) : _pos(pos), _color(color) {}
+
         static VkVertexInputBindingDescription getBindingDescription()
         {
             VkVertexInputBindingDescription bindingDescription{};
@@ -39,8 +41,8 @@ namespace VulkanImpl
             return attributeDescriptions;
         }
     private:
-        glm::vec2 _pos;
-        glm::vec3 _color;
+        const glm::vec2 _pos;
+        const glm::vec3 _color;
     };
 
 } // namespace

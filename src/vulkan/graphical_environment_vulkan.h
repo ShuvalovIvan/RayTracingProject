@@ -11,6 +11,7 @@
 #include "shader_modules.h"
 #include "user_control.h"
 #include "validation.h"
+#include "vertex_buffer.h"
 
 namespace VulkanImpl {
 
@@ -26,6 +27,7 @@ public:
         vkDestroySemaphore(_device->device(), _render_finished_semaphore, nullptr);
         vkDestroySemaphore(_device->device(), _image_available_semaphore, nullptr);
         vkDestroyFence(_device->device(), _in_flight_fence, nullptr);
+        _vertex_buffer.reset();
         _frame_buffers.clear();
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
@@ -72,6 +74,7 @@ private:
     std::unique_ptr<Device> _device;
     std::unique_ptr<ShaderModules> _shader_modules;
     std::vector<FrameBuffer> _frame_buffers;
+    std::unique_ptr<VertexBuffer> _vertex_buffer;
     std::unique_ptr<CommandBuffer> _command_buffer;
     std::unique_ptr<Validation> _validation;
     UserControl _user_control;
