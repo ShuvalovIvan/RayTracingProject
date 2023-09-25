@@ -3,7 +3,11 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
-#include "command_buffer.h"
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "command_buffers.h"
 #include "device.h"
 #include "descriptor_set_layout.h"
 #include "frame_buffer.h"
@@ -30,11 +34,13 @@ public:
         _pipeline.reset();
         _shader_modules.reset();
         _descriptor_set_layout.reset();
-        _command_buffer.reset();
+        _command_buffers.reset();
         _uniform_buffers.reset();
-        vkDestroySemaphore(_device->device(), _render_finished_semaphore, nullptr);
-        vkDestroySemaphore(_device->device(), _image_available_semaphore, nullptr);
-        vkDestroyFence(_device->device(), _in_flight_fence, nullptr);
+        for (int i = 0; i < _settings.max_frames_in_flight; ++i) {
+            vkDestroySemaphore(_device->device(), _render_finished_semaphores[i], nullptr);
+            vkDestroySemaphore(_device->device(), _image_available_semaphores[i], nullptr);
+            vkDestroyFence(_device->device(), _in_flight_fences[i], nullptr);
+        }
         _vertex_buffer.reset();
         _frame_buffers.clear();
         _device.reset();
@@ -70,6 +76,8 @@ public:
 
     void draw_frame();
 
+    void recreate_swap_chain();
+
 private:
     void window_init();
     void surface_init();
@@ -77,7 +85,12 @@ private:
     void frame_buffers_init();
     void synchronization_init();
 
+    void update_uniform_buffer(uint32_t currentImage);
+
     const GraphicalEnvironmentSettings _settings;
+    uint32_t _current_frame = 0;
+    bool _framebuffer_resized = false;
+
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
     VkSurfaceKHR _surface;
@@ -86,15 +99,15 @@ private:
     std::unique_ptr<ShaderModules> _shader_modules;
     std::vector<FrameBuffer> _frame_buffers;
     std::unique_ptr<VertexBuffer> _vertex_buffer;
-    std::unique_ptr<CommandBuffer> _command_buffer;
+    std::unique_ptr<CommandBuffers> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;
-    std::unique_ptr <DescriptorSetLayout> _descriptor_set_layout;
+    std::unique_ptr<DescriptorSetLayout> _descriptor_set_layout;
     UserControl _user_control;
 
-    VkSemaphore _image_available_semaphore;
-    VkSemaphore _render_finished_semaphore;
-    VkFence _in_flight_fence;
+    std::vector<VkSemaphore> _image_available_semaphores;
+    std::vector<VkSemaphore> _render_finished_semaphores;
+    std::vector<VkFence> _in_flight_fences;
 };
 
 }  // namespace

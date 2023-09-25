@@ -26,16 +26,25 @@ class Device {
 public:
     Device() {}
     ~Device() {
-        for (auto image_view : _swap_chain_image_views)
-        {
-            vkDestroyImageView(_device, image_view, nullptr);
-        }
-        vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
+        cleanup_swap_chain();
         vkDestroyDevice(_device, 0);
         std::clog << "Device destroyed" << std::endl;
     }
 
     void init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window);
+
+    void init_swap_chain(VkSurfaceKHR surface, GLFWwindow *window);
+
+    void init_image_views();
+
+    void cleanup_swap_chain() {
+        for (auto image_view : _swap_chain_image_views)
+        {
+            vkDestroyImageView(_device, image_view, nullptr);
+        }
+
+        vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
+    }
 
     VkDevice device() const {
         return _device;
@@ -77,11 +86,7 @@ private:
 
     void init_logical_device(VkSurfaceKHR surface);
 
-    void init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window);
-
-    void init_image_views();
-
-	VkDevice _device = VK_NULL_HANDLE;
+    VkDevice _device = VK_NULL_HANDLE;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkQueue _graphics_queue = VK_NULL_HANDLE;
     VkQueue _present_queue = VK_NULL_HANDLE;

@@ -3,16 +3,17 @@
 #include <vulkan/vulkan.h>
 
 #include "device.h"
+#include "vertex_buffer.h"
 
 namespace VulkanImpl
 {
 
-    class CommandBuffer
+    class CommandBuffers
     {
     public:
-        CommandBuffer(const Device& device) : _device(device) {}
+        CommandBuffers(const Device& device, int size) : _device(device), _size(size) {}
 
-        ~CommandBuffer() {
+        ~CommandBuffers() {
             vkDestroyCommandPool(_device.device(), _command_pool, nullptr);
         }
 
@@ -29,36 +30,47 @@ namespace VulkanImpl
                 LOG_AND_THROW(std::runtime_error("failed to create command pool!"));
             }
 
+            _command_buffers.resize(_size);
+
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             allocInfo.commandPool = _command_pool;
             allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandBufferCount = 1;
+            allocInfo.commandBufferCount = (uint32_t)_command_buffers.size();
 
-            if (vkAllocateCommandBuffers(_device.device(), &allocInfo, &_command_buffer) != VK_SUCCESS)
+            if (vkAllocateCommandBuffers(_device.device(), &allocInfo, _command_buffers.data()) != VK_SUCCESS)
             {
                 LOG_AND_THROW(std::runtime_error("failed to allocate command buffers!"));
             }
         }
 
-        VkCommandBuffer command_buffer() const {
-            return _command_buffer;
+        VkCommandBuffer command_buffer(int index) const
+        {
+            return _command_buffers[index];
         }
 
-        VkCommandPool command_pool() const {
+        VkCommandBuffer& command_buffer(int index) {
+            return _command_buffers[index];
+        }
+
+        VkCommandPool command_pool() const
+        {
             return _command_pool;
         }
 
-        void CommandBuffer::reset_record_command_buffer(VkRenderPass render_pass,
-                                                        VkFramebuffer frame_buffer,
-                                                        VkExtent2D swap_chain_extent,
-                                                        VkPipeline pipeline,
-                                                        VkBuffer vertex_buffer);
+        void CommandBuffers::reset_record_command_buffer(VkRenderPass render_pass,
+                                                         VkFramebuffer frame_buffer,
+                                                         VkExtent2D swap_chain_extent,
+                                                         VkPipeline pipeline,
+                                                         const VertexBuffer& vertex_buffer,
+                                                         uint32_t image_index);
 
     private:
         const Device& _device;
+        const int _size;
+
         VkCommandPool _command_pool;
-        VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
+        std::vector<VkCommandBuffer> _command_buffers;
     };
 
 } // namespace

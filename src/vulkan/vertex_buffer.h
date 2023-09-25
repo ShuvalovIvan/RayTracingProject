@@ -4,14 +4,15 @@
 
 #include <vector>
 
+#include "buffer_base.h"
 #include "vertex.h"
 
 namespace VulkanImpl
 {
 
-class VertexBuffer {
+class VertexBuffer : public BufferBase {
 public:
-    VertexBuffer(const Device& device) : _device(device) {}
+    VertexBuffer(const Device &device) : BufferBase(device) {}
 
     ~VertexBuffer() {
         vkDestroyBuffer(_device.device(), _index_buffer, nullptr);
@@ -25,10 +26,18 @@ public:
         return _vertex_buffer;
     }
 
+    VkBuffer index_buffer() const {
+        return _index_buffer;
+    }
+
     void init(VkCommandPool command_pool)
     {
         create_vertex_buffer(command_pool);
         create_index_buffer(command_pool);
+    }
+
+    int indices_size() const {
+        return _indices.size();
     }
 
 private:
@@ -104,62 +113,11 @@ private:
         vkBindBufferMemory(_device.device(), buffer, buffer_memory, 0);
     }
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool command_pool)
-    {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = command_pool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(_device.device(), &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        vkQueueSubmit(_device.graphics_queue(), 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(_device.graphics_queue());
-
-        vkFreeCommandBuffers(_device.device(), command_pool, 1, &commandBuffer);
-    }
-
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-    {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(_device.physical_device(), &memProperties);
-
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-        {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-            {
-                return i;
-            }
-        }
-
-        LOG_AND_THROW(std::runtime_error("failed to find suitable memory type!"));
-    }
-
-    const Device& _device;
-
     const std::vector<Vertex> _vertices = {
-        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
     const std::vector<uint16_t> _indices = {
         0, 1, 2, 2, 3, 0};

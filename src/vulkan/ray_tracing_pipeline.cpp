@@ -7,7 +7,7 @@
 
 namespace VulkanImpl {
 
-void RayTracingPipeline::init(ShaderModules& shader_modules)
+void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -23,7 +23,7 @@ void RayTracingPipeline::init(ShaderModules& shader_modules)
 
     init_render_pass();
 
-    init_graphics_pipeline(shader_modules);
+    init_graphics_pipeline(shader_modules, descriptor_set_layout);
 }
 
 void RayTracingPipeline::init_render_pass() {
@@ -58,7 +58,7 @@ void RayTracingPipeline::init_render_pass() {
     }
 }
 
-void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
+void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout& descriptor_set_layout)
 {
     // if (loaded_shaders.empty()) {
     //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
@@ -152,6 +152,8 @@ void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
     dynamicState.pDynamicStates = dynamicStates.data();
 
     auto loaded_shaders = shader_modules.load_all_stages();
+
+    // Pipeline layout created in init().
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

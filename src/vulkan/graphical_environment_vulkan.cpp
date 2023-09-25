@@ -4,6 +4,7 @@
 #include "graphical_environment_vulkan.h"
 
 #include <bitset>
+#include <chrono>
 
 #include "shader_loader.h"
 
@@ -114,16 +115,16 @@ namespace VulkanImpl
 
     void GraphicalEnvironment::init_pipeline() {
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
-        _pipeline->init(*_shader_modules);
+        _pipeline->init(*_shader_modules, *_descriptor_set_layout);
         std::cerr << "Pipeline initialized" << std::endl;
 
         frame_buffers_init();
 
-        _command_buffer = std::make_unique<CommandBuffer>(*_device.get());
-        _command_buffer->init(_surface);
+        _command_buffers = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight);
+        _command_buffers->init(_surface);
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
-        _vertex_buffer->init(_command_buffer->command_pool());
+        _vertex_buffer->init(_command_buffers->command_pool());
 
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
@@ -142,6 +143,10 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::synchronization_init() {
+        _image_available_semaphores.resize(_settings.max_frames_in_flight);
+        _render_finished_semaphores.resize(_settings.max_frames_in_flight);
+        _in_flight_fences.resize(_settings.max_frames_in_flight);
+
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -149,11 +154,14 @@ namespace VulkanImpl
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        if (vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_image_available_semaphore) != VK_SUCCESS ||
-            vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_render_finished_semaphore) != VK_SUCCESS ||
-            vkCreateFence(_device->device(), &fenceInfo, nullptr, &_in_flight_fence) != VK_SUCCESS)
+        for (size_t i = 0; i < _settings.max_frames_in_flight; i++)
         {
-            LOG_AND_THROW(std::runtime_error("failed to create synchronization objects for a frame!"));
+            if (vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_image_available_semaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_render_finished_semaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(_device->device(), &fenceInfo, nullptr, &_in_flight_fences[i]) != VK_SUCCESS)
+            {
+                LOG_AND_THROW(std::runtime_error("failed to create synchronization objects for a frame!"));
+            }
         }
     }
 
@@ -178,36 +186,47 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::draw_frame() {
-        vkWaitForFences(_device->device(), 1, &_in_flight_fence, VK_TRUE, UINT64_MAX);
-        vkResetFences(_device->device(), 1, &_in_flight_fence);
+        vkWaitForFences(_device->device(), 1, &_in_flight_fences[_current_frame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        vkAcquireNextImageKHR(_device->device(), _device->swap_chain(), UINT64_MAX, _image_available_semaphore, VK_NULL_HANDLE, &imageIndex);
-        assert(imageIndex < _frame_buffers.size());
-        auto& frame_buffer = _frame_buffers[imageIndex];
+        VkResult result = vkAcquireNextImageKHR(_device->device(), _device->swap_chain(), UINT64_MAX,
+                                                _image_available_semaphores[_current_frame], VK_NULL_HANDLE, &imageIndex);
 
-        _command_buffer->reset_record_command_buffer(_pipeline->render_pass(), frame_buffer.frame_buffer(),
-                                                     _device->swap_chain_extent(), _pipeline->pipeline(),
-                                                     _vertex_buffer->vertex_buffer());
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            recreate_swap_chain();
+            return;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
+
+        update_uniform_buffer(_current_frame);
+
+        vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
+
+        _command_buffers->reset_record_command_buffer(_pipeline->render_pass(), _frame_buffers[_current_frame].frame_buffer(),
+                                                      _device->swap_chain_extent(), _pipeline->pipeline(),
+                                                      *_vertex_buffer, imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {_image_available_semaphore};
+        VkSemaphore waitSemaphores[] = {_image_available_semaphores[_current_frame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        VkCommandBuffer command_buffers[] = { _command_buffer->command_buffer() };
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = command_buffers;
+        submitInfo.pCommandBuffers = &_command_buffers->command_buffer(_current_frame);
 
-        VkSemaphore signalSemaphores[] = { _render_finished_semaphore };
+        VkSemaphore signalSemaphores[] = {_render_finished_semaphores[_current_frame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(_device->graphics_queue(), 1, &submitInfo, _in_flight_fence) != VK_SUCCESS)
+        if (vkQueueSubmit(_device->graphics_queue(), 1, &submitInfo, _in_flight_fences[_current_frame]) != VK_SUCCESS)
         {
             LOG_AND_THROW(std::runtime_error("failed to submit draw command buffer!"));
         }
@@ -218,13 +237,52 @@ namespace VulkanImpl
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = { _device->swap_chain() };
+        VkSwapchainKHR swapChains[] = {_device->swap_chain()};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
         presentInfo.pImageIndices = &imageIndex;
 
-        vkQueuePresentKHR(_device->present_queue(), &presentInfo);
+        result = vkQueuePresentKHR(_device->present_queue(), &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _framebuffer_resized)
+        {
+            _framebuffer_resized = false;
+            recreate_swap_chain();
+        }
+        else if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
+
+        _current_frame = (_current_frame + 1) % _settings.max_frames_in_flight;
+    }
+
+    void GraphicalEnvironment::update_uniform_buffer(uint32_t currentImage)
+    {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f), _device->swap_chain_extent().width / (float)_device->swap_chain_extent().height, 0.1f, 10.0f);
+        ubo.proj[1][1] *= -1;
+
+        _uniform_buffers->copy_to_uniform_buffers_for_image(currentImage, ubo);
+    }
+
+    void GraphicalEnvironment::recreate_swap_chain() {
+        vkDeviceWaitIdle(_device->device());
+
+        _device->cleanup_swap_chain();
+        _frame_buffers.clear();
+
+        _device->init_swap_chain(_surface, _window);
+        _device->init_image_views();
+        frame_buffers_init();
     }
 
 } // namespace

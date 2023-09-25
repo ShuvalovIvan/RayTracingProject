@@ -10,7 +10,7 @@ public:
     DescriptorSetLayout(const Device& device) : _device(device) {}
 
     ~DescriptorSetLayout() {
-
+        vkDestroyDescriptorSetLayout(_device.device(), _descriptor_set_layout, nullptr);
     }
 
     void init()
@@ -31,6 +31,10 @@ public:
         {
             LOG_AND_THROW(std::runtime_error("failed to create descriptor set layout!"));
         }
+    }
+
+    VkDescriptorSetLayout& descriptor_set_layout() {
+        return _descriptor_set_layout;
     }
 
 private:
