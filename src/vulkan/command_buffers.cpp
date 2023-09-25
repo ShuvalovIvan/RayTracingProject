@@ -4,9 +4,12 @@ namespace VulkanImpl
 {
 
     void CommandBuffers::reset_record_command_buffer(
-        VkRenderPass render_pass, VkFramebuffer frame_buffer,
-        VkExtent2D swap_chain_extent, VkPipeline pipeline,
-        const VertexBuffer& vertex_buffer, uint32_t image_index)
+        VkFramebuffer frame_buffer,
+        VkExtent2D swap_chain_extent, const RayTracingPipeline &pipeline,
+        const VertexBuffer &vertex_buffer,
+        Descriptors &descriptors,
+        uint32_t image_index,
+        uint32_t current_frame)
     {
         vkResetCommandBuffer(_command_buffers[image_index], /*VkCommandBufferResetFlagBits*/ 0);
 
@@ -20,7 +23,7 @@ namespace VulkanImpl
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = render_pass;
+        renderPassInfo.renderPass = pipeline.render_pass();
         renderPassInfo.framebuffer = frame_buffer;
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swap_chain_extent;
@@ -31,7 +34,7 @@ namespace VulkanImpl
 
         vkCmdBeginRenderPass(_command_buffers[image_index], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(_command_buffers[image_index], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindPipeline(_command_buffers[image_index], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -52,6 +55,9 @@ namespace VulkanImpl
         vkCmdBindVertexBuffers(_command_buffers[image_index], 0, 1, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(_command_buffers[image_index], vertex_buffer.index_buffer(), 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdBindDescriptorSets(_command_buffers[image_index], VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipeline.pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
 
         vkCmdDrawIndexed(_command_buffers[image_index], static_cast<uint32_t>(vertex_buffer.indices_size()), 1, 0, 0, 0);
 

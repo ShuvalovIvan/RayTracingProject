@@ -28,6 +28,10 @@ public:
         return _pipeline;
     }
 
+    VkPipelineLayout pipeline_layout() const {
+        return _pipeline_layout;
+    }
+
 private:
     void init_render_pass();
     void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout);

@@ -80,10 +80,8 @@ namespace VulkanImpl
         std::clog << "Surface initialized" << std::endl;
         _device = std::make_unique<Device>();
         _device->init(_instance, _surface, _window);
-        _shader_modules = std::make_unique<ShaderModules>(*_device.get());
 
-        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
-        _descriptor_set_layout->init();
+        _shader_modules = std::make_unique<ShaderModules>(*_device.get());
     }
 
     void GraphicalEnvironment::window_init() {
@@ -128,6 +126,12 @@ namespace VulkanImpl
 
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
+
+        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
+        _descriptor_set_layout->init();
+
+        _descriptors = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight);
+        _descriptors->init(*_descriptor_set_layout, *_uniform_buffers);
 
         synchronization_init();
     }
@@ -206,9 +210,13 @@ namespace VulkanImpl
 
         vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
 
-        _command_buffers->reset_record_command_buffer(_pipeline->render_pass(), _frame_buffers[_current_frame].frame_buffer(),
-                                                      _device->swap_chain_extent(), _pipeline->pipeline(),
-                                                      *_vertex_buffer, imageIndex);
+        _command_buffers->reset_record_command_buffer(_frame_buffers[_current_frame].frame_buffer(),
+                                                      _device->swap_chain_extent(),
+                                                      *_pipeline,
+                                                      *_vertex_buffer,
+                                                      *_descriptors,
+                                                      imageIndex,
+                                                      _current_frame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

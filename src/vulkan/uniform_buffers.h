@@ -2,6 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
 #include "buffer_base.h"
 
 namespace VulkanImpl
@@ -24,6 +27,11 @@ public:
             vkDestroyBuffer(_device.device(), _uniform_buffers[i], nullptr);
             vkFreeMemory(_device.device(), _uniform_buffers_memory[i], nullptr);
         }
+    }
+
+    VkBuffer uniform_buffer(int frame_index) const {
+        assert(frame_index < _uniform_buffers.size());
+        return _uniform_buffers[frame_index];
     }
 
     void init() {

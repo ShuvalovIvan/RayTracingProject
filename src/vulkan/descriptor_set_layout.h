@@ -31,9 +31,16 @@ public:
         {
             LOG_AND_THROW(std::runtime_error("failed to create descriptor set layout!"));
         }
+        std::clog << "Descriptor set layout initialized" << std::endl;
     }
 
-    VkDescriptorSetLayout& descriptor_set_layout() {
+    VkDescriptorSetLayout descriptor_set_layout() const
+    {
+        return _descriptor_set_layout;
+    }
+
+    VkDescriptorSetLayout &descriptor_set_layout()
+    {
         return _descriptor_set_layout;
     }
 

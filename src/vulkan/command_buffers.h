@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 
 #include "device.h"
+#include "descriptors.h"
+#include "ray_tracing_pipeline.h"
 #include "vertex_buffer.h"
 
 namespace VulkanImpl
@@ -58,12 +60,13 @@ namespace VulkanImpl
             return _command_pool;
         }
 
-        void CommandBuffers::reset_record_command_buffer(VkRenderPass render_pass,
-                                                         VkFramebuffer frame_buffer,
+        void CommandBuffers::reset_record_command_buffer(VkFramebuffer frame_buffer,
                                                          VkExtent2D swap_chain_extent,
-                                                         VkPipeline pipeline,
-                                                         const VertexBuffer& vertex_buffer,
-                                                         uint32_t image_index);
+                                                         const RayTracingPipeline &pipeline,
+                                                         const VertexBuffer &vertex_buffer,
+                                                         Descriptors &descriptors,
+                                                         uint32_t image_index,
+                                                         uint32_t current_frame);
 
     private:
         const Device& _device;

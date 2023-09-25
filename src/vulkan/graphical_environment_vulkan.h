@@ -10,6 +10,7 @@
 #include "command_buffers.h"
 #include "device.h"
 #include "descriptor_set_layout.h"
+#include "descriptors.h"
 #include "frame_buffer.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
@@ -103,6 +104,7 @@ private:
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;
     std::unique_ptr<DescriptorSetLayout> _descriptor_set_layout;
+    std::unique_ptr<Descriptors> _descriptors;
     UserControl _user_control;
 
     std::vector<VkSemaphore> _image_available_semaphores;

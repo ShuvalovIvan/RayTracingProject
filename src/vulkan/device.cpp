@@ -21,6 +21,7 @@ void Device::init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window)
     init_logical_device(surface);
     init_swap_chain(surface, window);
     init_image_views();
+    std::clog << "Device initialized" << std::endl;
 }
 
 void Device::init_physical_device(VkInstance instance, VkSurfaceKHR surface) {
