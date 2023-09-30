@@ -8,8 +8,9 @@ namespace VulkanImpl
     class FrameBuffer
     {
     public:
-        FrameBuffer(const Device& device) : _device(device) {}
-        FrameBuffer(FrameBuffer&& other) : _device(other._device), _frame_buffer(other._frame_buffer) {
+        FrameBuffer(const Device& device, int image_index) : _device(device), _image_index(image_index) {}
+        FrameBuffer(FrameBuffer&& other)
+        : _device(other._device), _image_index(other._image_index), _frame_buffer(other._frame_buffer) {
             other._frame_buffer = VK_NULL_HANDLE;
         }
 
@@ -43,11 +44,16 @@ namespace VulkanImpl
             return _frame_buffer;
         }
 
+        int image_index() const {
+            return _image_index;
+        }
+
     private:
         FrameBuffer(const FrameBuffer&) = delete;
         FrameBuffer &operator=(const FrameBuffer&) = delete;
 
         const Device &_device;
+        const int _image_index;
         VkFramebuffer _frame_buffer = VK_NULL_HANDLE;
     };
 

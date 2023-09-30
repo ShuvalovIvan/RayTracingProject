@@ -19,6 +19,7 @@ public:
 
     VkDescriptorSet& descriptor(int frame_index)
     {
+        assert(frame_index < _descriptor_sets.size());
         return _descriptor_sets[frame_index];
     }
 

@@ -31,11 +31,12 @@ class GraphicalEnvironment : public ::GraphicalEnvironment {
 public:
     GraphicalEnvironment(GraphicalEnvironmentSettings settings = {}) {}
     ~GraphicalEnvironment() override {
-        std::cerr << "Tearing down" << std::endl;
+        std::clog << "Tearing down" << std::endl;
+        _frame_buffers.clear();
+        _device->cleanup_swap_chain();
         _pipeline.reset();
         _shader_modules.reset();
         _descriptor_set_layout.reset();
-        _command_buffers.reset();
         _uniform_buffers.reset();
         for (int i = 0; i < _settings.max_frames_in_flight; ++i) {
             vkDestroySemaphore(_device->device(), _render_finished_semaphores[i], nullptr);
@@ -43,16 +44,17 @@ public:
             vkDestroyFence(_device->device(), _in_flight_fences[i], nullptr);
         }
         _vertex_buffer.reset();
-        _frame_buffers.clear();
+
+        _command_buffers.reset();
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         _validation.reset();
         vkDestroyInstance(_instance, 0);
-        std::cerr << "Instance deleted" << std::endl;
+        std::clog << "Instance deleted" << std::endl;
         glfwDestroyWindow(_window);
-        std::cerr << "Window deleted" << std::endl;
+        std::clog << "Window deleted" << std::endl;
         glfwTerminate();
-        std::cerr << "Environment termninated" << std::endl;
+        std::clog << "Environment termninated" << std::endl;
     }
 
     void enable_validation();
@@ -66,6 +68,7 @@ public:
         // load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
         load_shader("../../build/assets/shaders/shader_buffers.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
         load_shader("../../build/assets/shaders/shader_buffers.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        std::clog << "Shaders loaded" << std::endl;
     }
 
     // Separate init that requires the shaders to be loaded.

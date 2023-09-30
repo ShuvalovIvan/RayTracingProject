@@ -82,6 +82,9 @@ namespace VulkanImpl
         _device->init(_instance, _surface, _window);
 
         _shader_modules = std::make_unique<ShaderModules>(*_device.get());
+
+        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
+        _descriptor_set_layout->init();
     }
 
     void GraphicalEnvironment::window_init() {
@@ -114,7 +117,7 @@ namespace VulkanImpl
     void GraphicalEnvironment::init_pipeline() {
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
         _pipeline->init(*_shader_modules, *_descriptor_set_layout);
-        std::cerr << "Pipeline initialized" << std::endl;
+        std::clog << "Pipeline initialized" << std::endl;
 
         frame_buffers_init();
 
@@ -127,9 +130,6 @@ namespace VulkanImpl
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
 
-        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
-        _descriptor_set_layout->init();
-
         _descriptors = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight);
         _descriptors->init(*_descriptor_set_layout, *_uniform_buffers);
 
@@ -139,11 +139,12 @@ namespace VulkanImpl
     void GraphicalEnvironment::frame_buffers_init() {
         auto image_views = _device->swap_chain_image_views();
         for (auto image_view : image_views) {
-            _frame_buffers.emplace_back(*_device.get());
+            int image_index = _frame_buffers.size();
+            _frame_buffers.emplace_back(*_device.get(), image_index);
             FrameBuffer& frame_buffer = _frame_buffers.back();
             frame_buffer.init(_pipeline->render_pass(), image_view);
         }
-        std::cerr << "Frame buffers initialized" << std::endl;
+        std::clog << "Frame buffers initialized" << std::endl;
     }
 
     void GraphicalEnvironment::synchronization_init() {
@@ -190,9 +191,11 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::draw_frame() {
+        assert(_current_frame < _in_flight_fences.size());
         vkWaitForFences(_device->device(), 1, &_in_flight_fences[_current_frame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
+        assert(_current_frame < _image_available_semaphores.size());
         VkResult result = vkAcquireNextImageKHR(_device->device(), _device->swap_chain(), UINT64_MAX,
                                                 _image_available_semaphores[_current_frame], VK_NULL_HANDLE, &imageIndex);
 
@@ -210,12 +213,12 @@ namespace VulkanImpl
 
         vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
 
-        _command_buffers->reset_record_command_buffer(_frame_buffers[_current_frame].frame_buffer(),
+        assert(_current_frame < _frame_buffers.size());
+        _command_buffers->reset_record_command_buffer(_frame_buffers[imageIndex],
                                                       _device->swap_chain_extent(),
                                                       *_pipeline,
                                                       *_vertex_buffer,
                                                       *_descriptors,
-                                                      imageIndex,
                                                       _current_frame);
 
         VkSubmitInfo submitInfo{};
@@ -230,6 +233,7 @@ namespace VulkanImpl
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &_command_buffers->command_buffer(_current_frame);
 
+        assert(_current_frame < _render_finished_semaphores.size());
         VkSemaphore signalSemaphores[] = {_render_finished_semaphores[_current_frame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;

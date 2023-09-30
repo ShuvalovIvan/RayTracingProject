@@ -26,6 +26,7 @@ class Device {
 public:
     Device() {}
     ~Device() {
+        vkDeviceWaitIdle(_device);
         cleanup_swap_chain();
         vkDestroyDevice(_device, 0);
         std::clog << "Device destroyed" << std::endl;
@@ -42,8 +43,12 @@ public:
         {
             vkDestroyImageView(_device, image_view, nullptr);
         }
+        _swap_chain_image_views.clear();
 
-        vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
+        if (_swap_chain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(_device, _swap_chain, nullptr);
+            _swap_chain = VK_NULL_HANDLE;
+        }
     }
 
     VkDevice device() const {

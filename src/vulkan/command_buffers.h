@@ -4,6 +4,7 @@
 
 #include "device.h"
 #include "descriptors.h"
+#include "frame_buffer.h"
 #include "ray_tracing_pipeline.h"
 #include "vertex_buffer.h"
 
@@ -16,6 +17,13 @@ namespace VulkanImpl
         CommandBuffers(const Device& device, int size) : _device(device), _size(size) {}
 
         ~CommandBuffers() {
+            for (auto cb : _command_buffers) {
+                auto result = vkResetCommandBuffer(cb, /*VkCommandBufferResetFlagBits*/ 0);
+                if (result != VK_SUCCESS) {
+                    std::cerr << "Command buffer reset error " << result << std::endl;
+                }
+            }
+            _command_buffers.clear();
             vkDestroyCommandPool(_device.device(), _command_pool, nullptr);
         }
 
@@ -48,10 +56,12 @@ namespace VulkanImpl
 
         VkCommandBuffer command_buffer(int index) const
         {
+            assert(index < _command_buffers.size());
             return _command_buffers[index];
         }
 
         VkCommandBuffer& command_buffer(int index) {
+            assert(index < _command_buffers.size());
             return _command_buffers[index];
         }
 
@@ -60,12 +70,11 @@ namespace VulkanImpl
             return _command_pool;
         }
 
-        void CommandBuffers::reset_record_command_buffer(VkFramebuffer frame_buffer,
+        void CommandBuffers::reset_record_command_buffer(FrameBuffer& frame_buffer,
                                                          VkExtent2D swap_chain_extent,
                                                          const RayTracingPipeline &pipeline,
                                                          const VertexBuffer &vertex_buffer,
                                                          Descriptors &descriptors,
-                                                         uint32_t image_index,
                                                          uint32_t current_frame);
 
     private:

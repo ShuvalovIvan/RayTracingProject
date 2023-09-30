@@ -14,6 +14,7 @@ class RayTracingPipeline {
 public:
     RayTracingPipeline(const Device& device) : _device(device) {}
     ~RayTracingPipeline() {
+        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
         vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
         vkDestroyRenderPass(_device.device(), _render_pass, nullptr);
     }
@@ -34,7 +35,7 @@ public:
 
 private:
     void init_render_pass();
-    void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout);
+    void init_graphics_pipeline(ShaderModules &shader_modules);
 
     const Device& _device;
 	VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;

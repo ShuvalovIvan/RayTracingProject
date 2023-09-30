@@ -11,8 +11,9 @@ void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;            // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr;         // Optional
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout.descriptor_set_layout();
+
     pipelineLayoutInfo.pushConstantRangeCount = 0;    // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -20,10 +21,11 @@ void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout
     {
         LOG_AND_THROW(std::runtime_error("failed to create pipeline layout!"));
     }
+    std::clog << "Pipeline layout created" << std::endl;
 
     init_render_pass();
 
-    init_graphics_pipeline(shader_modules, descriptor_set_layout);
+    init_graphics_pipeline(shader_modules);
 }
 
 void RayTracingPipeline::init_render_pass() {
@@ -46,19 +48,30 @@ void RayTracingPipeline::init_render_pass() {
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
 
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
     if (vkCreateRenderPass(_device.device(), &renderPassInfo, nullptr, &_render_pass) != VK_SUCCESS) {
         LOG_AND_THROW(std::runtime_error("failed to create render pass!"));
     }
+    std::clog << "Render pass initialized" << std::endl;
 }
 
-void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout& descriptor_set_layout)
+void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
 {
     // if (loaded_shaders.empty()) {
     //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
