@@ -32,11 +32,15 @@ public:
     GraphicalEnvironment(GraphicalEnvironmentSettings settings = {}) {}
     ~GraphicalEnvironment() override {
         std::clog << "Tearing down" << std::endl;
+        for (auto f : _in_flight_fences) {
+            vkWaitForFences(_device->device(), 1, &f, VK_TRUE, UINT64_MAX);
+        }
         _frame_buffers.clear();
         _device->cleanup_swap_chain();
         _pipeline.reset();
         _shader_modules.reset();
         _descriptor_set_layout.reset();
+        _descriptors.reset();
         _uniform_buffers.reset();
         for (int i = 0; i < _settings.max_frames_in_flight; ++i) {
             vkDestroySemaphore(_device->device(), _render_finished_semaphores[i], nullptr);
