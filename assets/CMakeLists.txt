@@ -23,35 +23,24 @@ foreach(shader ${shader_files})
 endforeach()
 
 macro(copy_assets asset_files dir_name copied_files)
-	foreach(asset ${${asset_files}})
+	message("Copy ${asset_files} to ${dir_name}")
+	foreach(asset ${asset_files})
 		message("asset: ${asset}")
 		get_filename_component(file_name ${asset} NAME)
 		get_filename_component(full_path ${asset} ABSOLUTE)
 		set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/${dir_name})
+		file(MAKE_DIRECTORY ${output_dir})
 		set(output_file ${output_dir}/${file_name})
-		set(${copied_files} ${${copied_files}} ${output_file})
-		set(${copied_files} ${${copied_files}} PARENT_SCOPE)
+		set(${copied_files} ${copied_files} ${output_file})
+		set(${copied_files} ${copied_files} PARENT_SCOPE)
 		set_source_files_properties(${asset} PROPERTIES HEADER_FILE_ONLY TRUE)
-		if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
-			add_custom_command(
-				OUTPUT ${output_file}
-				#COMMAND mklink \"${output_file}\" \"${full_path}\"
-				COMMAND xcopy \"${full_path}\" \"${output_file}*\" /Y /Q /F
-				DEPENDS ${full_path}
-			)
-		else()
-			add_custom_command(
-				OUTPUT ${output_file}
-				COMMAND mkdir --parents ${output_dir} && cp --force --link \"${full_path}\" \"${output_file}\"
-				DEPENDS ${full_path}
-			)
-		endif()
+		configure_file(${full_path} ${output_file} COPYONLY)
 	endforeach()
 endmacro()
 
-copy_assets(font_files fonts copied_fonts)
-copy_assets(model_files models copied_models)
-copy_assets(texture_files textures copied_textures)
+#copy_assets(font_files fonts copied_fonts)
+#copy_assets(model_files models copied_models)
+copy_assets(${texture_files} textures copied_textures)
 
 source_group("Fonts" FILES ${font_files})
 source_group("Models" FILES ${model_files})

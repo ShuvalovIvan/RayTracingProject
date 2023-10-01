@@ -18,5 +18,7 @@ protected:
     virtual void init() = 0;
     virtual void load_preconfigured_shapes() = 0;
 
+    virtual void add_texture(const std::string &file) = 0;
+
     virtual void start_interactive_loop() = 0;
 };

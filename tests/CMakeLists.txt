@@ -26,7 +26,7 @@ add_executable(${VULKAN_TESTNAME} vulkan_tests.cpp)
 
 target_include_directories(${TESTNAME} PRIVATE ../src ../src/vulkan)
 target_link_libraries(${TESTNAME} ${PROJECT_LIB} gtest gtest_main)
-target_include_directories(${VULKAN_TESTNAME} PRIVATE ../src ../src/vulkan)
+target_include_directories(${VULKAN_TESTNAME} PRIVATE ../src ../src/vulkan ../dependencies)
 target_link_libraries(${VULKAN_TESTNAME} ${PROJECT_LIB} gtest gtest_main)
 if(MSVC)
   SET_TARGET_PROPERTIES(${VULKAN_TESTNAME} PROPERTIES LINK_FLAGS

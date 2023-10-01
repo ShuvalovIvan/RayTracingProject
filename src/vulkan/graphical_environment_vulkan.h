@@ -15,6 +15,7 @@
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
 #include "shader_modules.h"
+#include "texture.h"
 #include "user_control.h"
 #include "validation.h"
 #include "vertex_buffer.h"
@@ -48,8 +49,9 @@ public:
             vkDestroyFence(_device->device(), _in_flight_fences[i], nullptr);
         }
         _vertex_buffer.reset();
-
         _command_buffers.reset();
+        _textures.clear();
+
         _device.reset();
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         _validation.reset();
@@ -77,6 +79,10 @@ public:
 
     // Separate init that requires the shaders to be loaded.
     void init_pipeline();
+
+    void add_texture(const std::string& file) override {
+        _textures.emplace_back(*_device, file);
+    }
 
     void dump_device_info() const;
 
@@ -112,6 +118,8 @@ private:
     std::unique_ptr<Validation> _validation;
     std::unique_ptr<DescriptorSetLayout> _descriptor_set_layout;
     std::unique_ptr<Descriptors> _descriptors;
+    std::vector<Texture> _textures;
+
     UserControl _user_control;
 
     std::vector<VkSemaphore> _image_available_semaphores;

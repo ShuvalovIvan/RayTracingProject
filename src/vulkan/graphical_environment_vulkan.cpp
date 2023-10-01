@@ -124,6 +124,10 @@ namespace VulkanImpl
         _command_buffers = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _command_buffers->init(_surface);
 
+        for (auto& texture : _textures) {
+            texture.load(_command_buffers->command_pool());
+        }
+
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
         _vertex_buffer->init(_command_buffers->command_pool());
 

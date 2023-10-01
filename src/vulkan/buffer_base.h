@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "device.h"
+
 namespace VulkanImpl
 {
 
@@ -40,7 +42,7 @@ protected:
         vkBindBufferMemory(_device.device(), buffer, buffer_memory, 0);
     }
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool command_pool)
+    VkCommandBuffer beginSingleTimeCommands(VkCommandPool command_pool)
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -57,10 +59,11 @@ protected:
 
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        VkBufferCopy copyRegion{};
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+        return commandBuffer;
+    }
 
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool command_pool)
+    {
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -72,7 +75,17 @@ protected:
         vkQueueWaitIdle(_device.graphics_queue());
 
         vkFreeCommandBuffers(_device.device(), command_pool, 1, &commandBuffer);
+    }
 
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool command_pool)
+    {
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(command_pool);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+        endSingleTimeCommands(commandBuffer, command_pool);
     }
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)

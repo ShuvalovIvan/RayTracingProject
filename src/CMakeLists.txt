@@ -5,6 +5,7 @@ target_sources(${PROJECT_LIB}
         vulkan/graphical_environment_vulkan.cpp
         vulkan/ray_tracing_pipeline.cpp
         vulkan/shader_loader.cpp
+        vulkan/texture.cpp
         vulkan/validation.cpp
     PUBLIC
         graphical_environment.h

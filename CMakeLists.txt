@@ -125,10 +125,12 @@ add_subdirectory(assets)
 add_subdirectory(src)
 add_subdirectory(dependencies/tinyobjloader)
 add_subdirectory(dependencies/GLM)
+add_subdirectory(dependencies/stb)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
 target_compile_features(${PROJECT_LIB} PRIVATE cxx_std_17)
-target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/dependencies/GLM/glm)
+target_include_directories(${PROJECT_LIB} PRIVATE ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/dependencies/GLM/glm ${CMAKE_SOURCE_DIR}/dependencies/)
 
 list(APPEND CMAKE_PREFIX_PATH "dependencies/GLFW/lib/cmake")
 find_package(glfw3 REQUIRED)
