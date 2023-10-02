@@ -9,7 +9,7 @@ namespace VulkanImpl
 
 class Texture : public BufferBase {
 public:
-    Texture(const Device &device, const std::string &file) : BufferBase(device), _file(file) {}
+    Texture(Device &device, const std::string &file) : BufferBase(device), _file(file) {}
 
     Texture(Texture&& other) : BufferBase(other._device), _file(other._file),
         _texture_image(other._texture_image), _texture_image_memory(other._texture_image_memory) {
@@ -18,10 +18,20 @@ public:
         }
 
     ~Texture() {
-        if (_texture_image)
+        if (_texture_image) {
             vkDestroyImage(_device.device(), _texture_image, nullptr);
-        if (_texture_image_memory)
             vkFreeMemory(_device.device(), _texture_image_memory, nullptr);
+            vkDestroySampler(_device.device(), _texture_sampler, nullptr);
+            vkDestroyImageView(_device.device(), _texture_image_view, nullptr);
+        }
+    }
+
+    VkImageView texture_image_view() const {
+        return _texture_image_view;
+    }
+
+    VkSampler texture_sampler() const {
+        return _texture_sampler;
     }
 
     void load(VkCommandPool command_pool);
@@ -122,6 +132,8 @@ private:
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool command_pool)
     {
+        assert(width > 10);
+        assert(height > 10);
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(command_pool);
 
         VkBufferImageCopy region{};
@@ -143,8 +155,13 @@ private:
         endSingleTimeCommands(commandBuffer, command_pool);
     }
 
+    void init_image_view();
+    void init_image_sampler();
+
     const std::string _file;
     VkImage _texture_image;
     VkDeviceMemory _texture_image_memory;
+    VkImageView _texture_image_view;
+    VkSampler _texture_sampler;
 };
 }

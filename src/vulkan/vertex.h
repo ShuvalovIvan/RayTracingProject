@@ -12,7 +12,8 @@ namespace VulkanImpl
     class Vertex
     {
     public:
-        Vertex(glm::vec2 pos, glm::vec3 color) : _pos(pos), _color(color) {}
+        Vertex(glm::vec2 pos, glm::vec3 color, glm::vec2 texCoord)
+            : _pos(pos), _color(color), _texCoord(texCoord) {}
 
         static VkVertexInputBindingDescription getBindingDescription()
         {
@@ -24,9 +25,9 @@ namespace VulkanImpl
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
         {
-            std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+            std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
@@ -38,11 +39,17 @@ namespace VulkanImpl
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[1].offset = offsetof(Vertex, _color);
 
+            attributeDescriptions[2].binding = 0;
+            attributeDescriptions[2].location = 2;
+            attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+            attributeDescriptions[2].offset = offsetof(Vertex, _texCoord);
+
             return attributeDescriptions;
         }
     private:
         const glm::vec2 _pos;
         const glm::vec3 _color;
+        const glm::vec2 _texCoord;
     };
 
 } // namespace

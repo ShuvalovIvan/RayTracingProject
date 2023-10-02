@@ -18,11 +18,14 @@ namespace VulkanImpl
         {
             if (_frame_buffer != VK_NULL_HANDLE) {
                 vkDestroyFramebuffer(_device.device(), _frame_buffer, nullptr);
+                std::clog << "Frame buffer destroyed" << std::endl;
             }
         }
 
         void init(VkRenderPass render_pass, VkImageView swap_chain_image_view)
         {
+            assert(_device.swap_chain_extent().width > 10);
+            assert(_device.swap_chain_extent().height > 10);
             VkImageView attachments[] = { swap_chain_image_view };
 
             VkFramebufferCreateInfo framebufferInfo{};

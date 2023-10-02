@@ -99,6 +99,8 @@ public:
 
     static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
+    VkImageView createImageView(VkImage image, VkFormat format);
+
 private:
     Device(const Device &) = delete;
     Device &operator=(const Device &) = delete;

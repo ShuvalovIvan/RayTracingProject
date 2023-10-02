@@ -12,7 +12,7 @@ namespace VulkanImpl
 
 class VertexBuffer : public BufferBase {
 public:
-    VertexBuffer(const Device &device) : BufferBase(device) {}
+    VertexBuffer(Device &device) : BufferBase(device) {}
 
     ~VertexBuffer() {
         vkDestroyBuffer(_device.device(), _index_buffer, nullptr);
@@ -117,10 +117,11 @@ private:
     }
 
     const std::vector<Vertex> _vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+    };
 
     const std::vector<uint16_t> _indices = {
         0, 1, 2, 2, 3, 0};

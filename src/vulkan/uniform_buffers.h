@@ -19,7 +19,7 @@ struct UniformBufferObject
 
 class UniformBuffers : public BufferBase {
 public:
-    UniformBuffers(const Device &device, int size) : BufferBase(device), _size(size) {}
+    UniformBuffers(Device &device, int size) : BufferBase(device), _size(size) {}
 
     ~UniformBuffers() {
         for (size_t i = 0; i < _size; i++)

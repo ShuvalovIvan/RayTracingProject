@@ -9,7 +9,7 @@ namespace VulkanImpl
 
 class BufferBase {
 protected:
-    BufferBase(const Device &device) : _device(device) {}
+    BufferBase(Device &device) : _device(device) {}
 
     ~BufferBase() {}
 
@@ -106,7 +106,7 @@ protected:
         LOG_AND_THROW(std::runtime_error("failed to find suitable memory type!"));
     }
 
-    const Device &_device;
+    Device &_device;
 
 private:
     BufferBase(const BufferBase&) = delete;

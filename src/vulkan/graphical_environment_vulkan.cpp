@@ -145,7 +145,8 @@ namespace VulkanImpl
         _uniform_buffers->init();
 
         _descriptors = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight);
-        _descriptors->init(*_descriptor_set_layout, *_uniform_buffers);
+        // Only first texture is supported for now.
+        _descriptors->init(*_descriptor_set_layout, *_uniform_buffers, _textures[0]);
 
         synchronization_init();
     }
