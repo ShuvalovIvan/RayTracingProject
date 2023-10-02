@@ -100,6 +100,9 @@ public:
     static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 private:
+    Device(const Device &) = delete;
+    Device &operator=(const Device &) = delete;
+
     void init_physical_device(VkInstance instance, VkSurfaceKHR surface);
 
     void init_logical_device(VkSurfaceKHR surface);

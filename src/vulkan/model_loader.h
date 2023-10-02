@@ -19,6 +19,9 @@ namespace VulkanImpl
         }
 
     private:
+        ModelLoader(const ModelLoader &) = delete;
+        ModelLoader &operator=(const ModelLoader &) = delete;
+
         const std::string _model_path;
         const std::string _texture_path;
         int _width;

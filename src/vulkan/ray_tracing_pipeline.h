@@ -34,6 +34,9 @@ public:
     }
 
 private:
+    RayTracingPipeline(const RayTracingPipeline &) = delete;
+    RayTracingPipeline &operator=(const RayTracingPipeline &) = delete;
+
     void init_render_pass();
     void init_graphics_pipeline(ShaderModules &shader_modules);
 

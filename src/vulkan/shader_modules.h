@@ -30,6 +30,9 @@ namespace VulkanImpl
         }
 
     private:
+        ShaderModules(const ShaderModules &) = delete;
+        ShaderModules &operator=(const ShaderModules &) = delete;
+
         const Device &_device;
         std::vector<ShaderLoader> _loaders;
     };

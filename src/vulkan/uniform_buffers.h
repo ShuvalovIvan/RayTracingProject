@@ -57,6 +57,9 @@ public:
     }
 
 private:
+    UniformBuffers(const UniformBuffers &) = delete;
+    UniformBuffers &operator=(const UniformBuffers &) = delete;
+
     const int _size;
 
     std::vector<VkBuffer> _uniform_buffers;

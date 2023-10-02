@@ -9,6 +9,8 @@ namespace VulkanImpl {
 
 void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout)
 {
+    init_render_pass();
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
@@ -22,8 +24,6 @@ void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout
         LOG_AND_THROW(std::runtime_error("failed to create pipeline layout!"));
     }
     std::clog << "Pipeline layout created" << std::endl;
-
-    init_render_pass();
 
     init_graphics_pipeline(shader_modules);
 }
@@ -73,10 +73,6 @@ void RayTracingPipeline::init_render_pass() {
 
 void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
 {
-    // if (loaded_shaders.empty()) {
-    //     LOG_AND_THROW(std::runtime_error("No shaders loaded"));
-    // }
-
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
@@ -93,26 +89,10 @@ void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(_device.swap_chain_extent().width);
-	viewport.height = static_cast<float>(_device.swap_chain_extent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-    assert(viewport.width > 1);
-    assert(viewport.height > 1);
-
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = _device.swap_chain_extent();
-
 	VkPipelineViewportStateCreateInfo viewportState = {};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
 	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -128,20 +108,10 @@ void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisampling.minSampleShading = 1.0f; // Optional
-    multisampling.pSampleMask = nullptr; // Optional
-    multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-    multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -165,6 +135,7 @@ void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules)
     dynamicState.pDynamicStates = dynamicStates.data();
 
     auto loaded_shaders = shader_modules.load_all_stages();
+    assert(!loaded_shaders.empty());
 
     // Pipeline layout created in init().
 

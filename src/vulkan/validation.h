@@ -21,6 +21,9 @@ public:
     std::vector<const char*> supported_layers();
 
 private:
+    Validation(const Validation &) = delete;
+    Validation &operator=(const Validation &) = delete;
+
     bool check_validation_layer_support();
 
     const std::vector<const char *> _validation_layers = {

@@ -93,6 +93,9 @@ public:
     void recreate_swap_chain();
 
 private:
+    GraphicalEnvironment(const GraphicalEnvironment &) = delete;
+    GraphicalEnvironment &operator=(const GraphicalEnvironment &) = delete;
+
     void window_init();
     void surface_init();
 

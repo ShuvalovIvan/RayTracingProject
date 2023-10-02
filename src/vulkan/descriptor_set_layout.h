@@ -45,6 +45,9 @@ public:
     }
 
 private:
+    DescriptorSetLayout(const DescriptorSetLayout &) = delete;
+    DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
+
     const Device &_device;
     VkDescriptorSetLayout _descriptor_set_layout;
 };

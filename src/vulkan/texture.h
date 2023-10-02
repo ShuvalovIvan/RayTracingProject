@@ -11,14 +11,25 @@ class Texture : public BufferBase {
 public:
     Texture(const Device &device, const std::string &file) : BufferBase(device), _file(file) {}
 
+    Texture(Texture&& other) : BufferBase(other._device), _file(other._file),
+        _texture_image(other._texture_image), _texture_image_memory(other._texture_image_memory) {
+            other._texture_image = VK_NULL_HANDLE;
+            other._texture_image_memory = VK_NULL_HANDLE;
+        }
+
     ~Texture() {
-        vkDestroyImage(_device.device(), _texture_image, nullptr);
-        vkFreeMemory(_device.device(), _texture_image_memory, nullptr);
+        if (_texture_image)
+            vkDestroyImage(_device.device(), _texture_image, nullptr);
+        if (_texture_image_memory)
+            vkFreeMemory(_device.device(), _texture_image_memory, nullptr);
     }
 
     void load(VkCommandPool command_pool);
 
 private:
+    Texture(const Texture &) = delete;
+    Texture &operator=(const Texture &) = delete;
+
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
     {
         VkImageCreateInfo imageInfo{};

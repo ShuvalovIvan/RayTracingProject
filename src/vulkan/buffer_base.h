@@ -107,6 +107,10 @@ protected:
     }
 
     const Device &_device;
+
+private:
+    BufferBase(const BufferBase&) = delete;
+    BufferBase &operator=(const BufferBase&) = delete;
 };
 
 } // namespace

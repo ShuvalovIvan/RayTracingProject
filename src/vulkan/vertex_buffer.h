@@ -41,6 +41,9 @@ public:
     }
 
 private:
+    VertexBuffer(const VertexBuffer &) = delete;
+    VertexBuffer &operator=(const VertexBuffer &) = delete;
+
     void create_vertex_buffer(VkCommandPool command_pool)
     {
         VkDeviceSize bufferSize = sizeof(_vertices[0]) * _vertices.size();

@@ -80,6 +80,9 @@ public:
     }
 
 private:
+    Descriptors(const Descriptors &) = delete;
+    Descriptors &operator=(const Descriptors &) = delete;
+
     const Device &_device;
     const int _max_frames;
     VkDescriptorPool _descriptor_pool;

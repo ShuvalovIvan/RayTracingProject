@@ -126,6 +126,7 @@ namespace VulkanImpl
     void GraphicalEnvironment::init_pipeline() {
         _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
         _pipeline->init(*_shader_modules, *_descriptor_set_layout);
+        _shader_modules.reset();
         std::clog << "Pipeline initialized" << std::endl;
 
         frame_buffers_init();
@@ -150,6 +151,7 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::frame_buffers_init() {
+        _frame_buffers.clear();
         auto image_views = _device->swap_chain_image_views();
         for (auto image_view : image_views) {
             int image_index = _frame_buffers.size();

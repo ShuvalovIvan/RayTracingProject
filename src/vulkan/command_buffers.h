@@ -78,7 +78,10 @@ namespace VulkanImpl
                                                          uint32_t current_frame);
 
     private:
-        const Device& _device;
+        CommandBuffers(const CommandBuffers &) = delete;
+        CommandBuffers &operator=(const CommandBuffers &) = delete;
+
+        const Device &_device;
         const int _size;
 
         VkCommandPool _command_pool;
