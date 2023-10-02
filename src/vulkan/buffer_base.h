@@ -71,7 +71,9 @@ protected:
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
-        vkQueueSubmit(_device.graphics_queue(), 1, &submitInfo, VK_NULL_HANDLE);
+        if (VK_SUCCESS != vkQueueSubmit(_device.graphics_queue(), 1, &submitInfo, VK_NULL_HANDLE)) {
+            LOG_AND_THROW(std::runtime_error("vkQueueSubmit failed"));
+        }
         vkQueueWaitIdle(_device.graphics_queue());
 
         vkFreeCommandBuffers(_device.device(), command_pool, 1, &commandBuffer);

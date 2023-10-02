@@ -34,6 +34,9 @@ namespace VulkanImpl
             LOG_AND_THROW(std::runtime_error("glfwVulkanSupported() failed"));
         }
 
+        window_init();
+        std::clog << "Window initialized" << std::endl;
+
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Vulkan Project";
@@ -66,6 +69,14 @@ namespace VulkanImpl
         createInfo.enabledLayerCount	= layers.size();
         createInfo.ppEnabledLayerNames	= layers.data();
 
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+        debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        debugCreateInfo.pfnUserCallback = debugCallback;
+
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+
         if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &_instance)) {
             LOG_AND_THROW(std::runtime_error("create instance"));
         }
@@ -74,8 +85,6 @@ namespace VulkanImpl
             _validation->init(_instance);
         }
 
-        window_init();
-        std::clog << "Window initialized" << std::endl;
         surface_init();
         std::clog << "Surface initialized" << std::endl;
         _device = std::make_unique<Device>();
@@ -91,7 +100,7 @@ namespace VulkanImpl
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        _window = glfwCreateWindow(800, 600, "Vulkan project", nullptr, nullptr);
+        _window = glfwCreateWindow(1024, 768, "Vulkan project", nullptr, nullptr);
         if (_window == nullptr)
         {
             LOG_AND_THROW(std::runtime_error("failed to create window"));
@@ -210,7 +219,7 @@ namespace VulkanImpl
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            throw std::runtime_error("failed to acquire swap chain image!");
+            LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image!"));
         }
 
         update_uniform_buffer(_current_frame);
@@ -291,6 +300,7 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::recreate_swap_chain() {
+        std::clog << "Receate swap chain" << std::endl;
         vkDeviceWaitIdle(_device->device());
 
         _device->cleanup_swap_chain();

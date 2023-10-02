@@ -23,5 +23,6 @@ protected:
 TEST_F(RayTracingFixture, BasicVulkan) {
     for (int i = 0; i < 100; ++i) {
         _scene.draw_frame();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }

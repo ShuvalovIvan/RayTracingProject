@@ -22,6 +22,13 @@ struct QueueFamilyIndices
     }
 };
 
+struct SwapChainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
 class Device {
 public:
     Device() {}
@@ -84,7 +91,13 @@ public:
         return _present_queue;
     }
 
-    QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface) const;
+    static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+    QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface) const {
+        return Device::findQueueFamilies(_physical_device, surface);
+    }
+
+    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 private:
     void init_physical_device(VkInstance instance, VkSurfaceKHR surface);
@@ -95,7 +108,6 @@ private:
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkQueue _graphics_queue = VK_NULL_HANDLE;
     VkQueue _present_queue = VK_NULL_HANDLE;
-    uint32_t _queue_family_index = 0;
     VkSwapchainKHR _swap_chain = VK_NULL_HANDLE;
     std::vector<VkImage> _swap_chain_images;
     VkFormat _swap_chain_image_format = VK_FORMAT_UNDEFINED;

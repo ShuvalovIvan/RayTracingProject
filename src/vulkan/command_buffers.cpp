@@ -10,6 +10,8 @@ namespace VulkanImpl
         Descriptors &descriptors,
         uint32_t current_frame)
     {
+        assert(swap_chain_extent.height > 10);
+        assert(swap_chain_extent.width > 10);
         assert(current_frame < _command_buffers.size());
         vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0);
 
