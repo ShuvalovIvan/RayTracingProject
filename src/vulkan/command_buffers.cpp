@@ -4,7 +4,7 @@ namespace VulkanImpl
 {
 
     void CommandBuffers::reset_record_command_buffer(
-        FrameBuffer& frame_buffer,
+        VkFramebuffer frame_buffer,
         VkExtent2D swap_chain_extent, const RayTracingPipeline &pipeline,
         const VertexBuffer &vertex_buffer,
         Descriptors &descriptors,
@@ -26,7 +26,7 @@ namespace VulkanImpl
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = pipeline.render_pass();
-        renderPassInfo.framebuffer = frame_buffer.frame_buffer();
+        renderPassInfo.framebuffer = frame_buffer;
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swap_chain_extent;
 

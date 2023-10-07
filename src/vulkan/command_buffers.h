@@ -4,7 +4,7 @@
 
 #include "device.h"
 #include "descriptors.h"
-#include "frame_buffer.h"
+#include "frame_buffers.h"
 #include "ray_tracing_pipeline.h"
 #include "vertex_buffer.h"
 
@@ -70,7 +70,7 @@ namespace VulkanImpl
             return _command_pool;
         }
 
-        void CommandBuffers::reset_record_command_buffer(FrameBuffer& frame_buffer,
+        void CommandBuffers::reset_record_command_buffer(VkFramebuffer frame_buffer,
                                                          VkExtent2D swap_chain_extent,
                                                          const RayTracingPipeline &pipeline,
                                                          const VertexBuffer &vertex_buffer,

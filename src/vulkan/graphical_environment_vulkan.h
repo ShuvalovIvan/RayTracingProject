@@ -11,7 +11,7 @@
 #include "device.h"
 #include "descriptor_set_layout.h"
 #include "descriptors.h"
-#include "frame_buffer.h"
+#include "frame_buffers.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
 #include "shader_modules.h"
@@ -36,7 +36,7 @@ public:
         for (auto f : _in_flight_fences) {
             vkWaitForFences(_device->device(), 1, &f, VK_TRUE, UINT64_MAX);
         }
-        _frame_buffers.clear();
+        _frame_buffers.reset();
         _device->cleanup_swap_chain();
         _pipeline.reset();
         _shader_modules.reset();
@@ -114,7 +114,7 @@ private:
     std::unique_ptr<RayTracingPipeline> _pipeline;
     std::unique_ptr<Device> _device;
     std::unique_ptr<ShaderModules> _shader_modules;
-    std::vector<FrameBuffer> _frame_buffers;
+    std::unique_ptr<FrameBuffers> _frame_buffers;
     std::unique_ptr<VertexBuffer> _vertex_buffer;
     std::unique_ptr<CommandBuffers> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;

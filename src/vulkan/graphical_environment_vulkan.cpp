@@ -152,14 +152,10 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::frame_buffers_init() {
-        _frame_buffers.clear();
+        _frame_buffers.reset();
         auto image_views = _device->swap_chain_image_views();
-        for (auto image_view : image_views) {
-            int image_index = _frame_buffers.size();
-            _frame_buffers.emplace_back(*_device.get(), image_index);
-            FrameBuffer& frame_buffer = _frame_buffers.back();
-            frame_buffer.init(_pipeline->render_pass(), image_view);
-        }
+        _frame_buffers = std::make_unique<FrameBuffers>(*_device.get(), image_views.size());
+        _frame_buffers->init(_pipeline->render_pass(), image_views);
         std::clog << "Frame buffers initialized" << std::endl;
     }
 
@@ -229,8 +225,8 @@ namespace VulkanImpl
 
         vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
 
-        assert(_current_frame < _frame_buffers.size());
-        _command_buffers->reset_record_command_buffer(_frame_buffers[imageIndex],
+        assert(_current_frame < static_cast<size_t>(_frame_buffers->size()));
+        _command_buffers->reset_record_command_buffer(_frame_buffers->frame_buffers()[imageIndex],
                                                       _device->swap_chain_extent(),
                                                       *_pipeline,
                                                       *_vertex_buffer,
@@ -303,11 +299,11 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::recreate_swap_chain() {
-        std::clog << "Receate swap chain" << std::endl;
+        std::clog << "Recreate swap chain" << std::endl;
         vkDeviceWaitIdle(_device->device());
 
         _device->cleanup_swap_chain();
-        _frame_buffers.clear();
+        _frame_buffers.reset();
 
         _device->init_swap_chain(_surface, _window);
         _device->init_image_views();
