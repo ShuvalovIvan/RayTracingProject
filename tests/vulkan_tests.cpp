@@ -21,8 +21,5 @@ protected:
 };
 
 TEST_F(RayTracingFixture, BasicVulkan) {
-    for (int i = 0; i < 100; ++i) {
-        _scene.draw_frame();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+    _scene.start_interactive_loop(100, std::chrono::milliseconds(100));
 }

@@ -38,7 +38,8 @@ private:
     RayTracingPipeline &operator=(const RayTracingPipeline &) = delete;
 
     void init_render_pass();
-    void init_graphics_pipeline(ShaderModules &shader_modules);
+    void init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout);
+    void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout);
 
     const Device& _device;
 	VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;

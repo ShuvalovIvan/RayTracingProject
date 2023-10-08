@@ -5,6 +5,7 @@
 
 #include <bitset>
 #include <chrono>
+#include <thread>
 
 #include "shader_loader.h"
 
@@ -88,7 +89,7 @@ namespace VulkanImpl
         surface_init();
         std::clog << "Surface initialized" << std::endl;
         _device = std::make_unique<Device>();
-        _device->init(_instance, _surface, _window);
+        _device->init(_settings, _instance, _surface, _window);
 
         _shader_modules = std::make_unique<ShaderModules>(*_device.get());
 
@@ -96,17 +97,24 @@ namespace VulkanImpl
         _descriptor_set_layout->init();
     }
 
+    static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
+    {
+        auto app = reinterpret_cast<GraphicalEnvironment *>(glfwGetWindowUserPointer(window));
+        app->framebuffer_resized();
+    }
+
     void GraphicalEnvironment::window_init() {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        _window = glfwCreateWindow(1024, 768, "Vulkan project", nullptr, nullptr);
+        _window = glfwCreateWindow(_settings.width, _settings.height, "Vulkan project", nullptr, nullptr);
         if (_window == nullptr)
         {
             LOG_AND_THROW(std::runtime_error("failed to create window"));
         }
 
         glfwSetWindowUserPointer(_window, this);
+        glfwSetFramebufferSizeCallback(_window, framebufferResizeCallback);
         // glfwSetKeyCallback(_window, GlfwKeyCallback);
         // glfwSetCursorPosCallback(window_, GlfwCursorPositionCallback);
         // glfwSetMouseButtonCallback(window_, GlfwMouseButtonCallback);
@@ -198,8 +206,18 @@ namespace VulkanImpl
         std::clog << std::endl;
     }
 
-    void GraphicalEnvironment::start_interactive_loop() {
+    void GraphicalEnvironment::start_interactive_loop(int loops, std::chrono::milliseconds sleep)
+    {
+        for (int loop = 0; !glfwWindowShouldClose(_window) && (loops <= 0 || loop < loops); ++loop)
+        {
+            glfwPollEvents();
+            draw_frame();
+            if (sleep > std::chrono::milliseconds(0)) {
+                std::this_thread::sleep_for(sleep);
+            }
+        }
 
+        vkDeviceWaitIdle(_device->device());
     }
 
     void GraphicalEnvironment::draw_frame() {
@@ -218,10 +236,11 @@ namespace VulkanImpl
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image!"));
+            LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image! Err: " + std::to_string(result)));
         }
 
         update_uniform_buffer(_current_frame);
+        update_backgroung_color();
 
         vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
 
@@ -231,7 +250,8 @@ namespace VulkanImpl
                                                       *_pipeline,
                                                       *_vertex_buffer,
                                                       *_descriptors,
-                                                      _current_frame);
+                                                      _current_frame,
+                                                      _background);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -276,7 +296,7 @@ namespace VulkanImpl
         }
         else if (result != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to present swap chain image!");
+            LOG_AND_THROW(std::runtime_error("failed to present swap chain image!"));
         }
 
         _current_frame = (_current_frame + 1) % _settings.max_frames_in_flight;
@@ -298,6 +318,17 @@ namespace VulkanImpl
         _uniform_buffers->copy_to_uniform_buffers_for_image(currentImage, ubo);
     }
 
+    void GraphicalEnvironment::update_backgroung_color() {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        uint64_t diff_millis = static_cast<uint64_t>(
+            std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - startTime).count());
+
+        _background.color.float32[1] = 0.0001 * (diff_millis % 65);
+        _background.color.float32[2] = 0.0001 * (diff_millis % 42);
+    }
+
     void GraphicalEnvironment::recreate_swap_chain() {
         std::clog << "Recreate swap chain" << std::endl;
         vkDeviceWaitIdle(_device->device());
@@ -305,7 +336,7 @@ namespace VulkanImpl
         _device->cleanup_swap_chain();
         _frame_buffers.reset();
 
-        _device->init_swap_chain(_surface, _window);
+        _device->init_swap_chain(_settings, _surface, _window);
         _device->init_image_views();
         frame_buffers_init();
     }

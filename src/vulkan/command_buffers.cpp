@@ -8,12 +8,15 @@ namespace VulkanImpl
         VkExtent2D swap_chain_extent, const RayTracingPipeline &pipeline,
         const VertexBuffer &vertex_buffer,
         Descriptors &descriptors,
-        uint32_t current_frame)
+        uint32_t current_frame,
+        VkClearValue background)
     {
         assert(swap_chain_extent.height > 10);
         assert(swap_chain_extent.width > 10);
         assert(current_frame < _command_buffers.size());
-        vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0);
+        if (vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS) {
+            LOG_AND_THROW(std::runtime_error("failed to reset command buffer!"));
+        }
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -30,9 +33,8 @@ namespace VulkanImpl
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swap_chain_extent;
 
-        VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
         renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearColor;
+        renderPassInfo.pClearValues = &background;
 
         vkCmdBeginRenderPass(_command_buffers[current_frame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

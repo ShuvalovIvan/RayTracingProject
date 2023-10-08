@@ -5,25 +5,31 @@
 
 #include "vulkan/device.h"
 
+#include "vulkan/graphical_environment_vulkan.h"
+
 namespace VulkanImpl {
 
 static constexpr int MAX_DEVICE_COUNT = 10;
 static constexpr int MAX_QUEUE_COUNT = 4;
 
+const std::vector<const char *> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
 
-void Device::init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window) {
+std::vector<const char *> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+void Device::init(const GraphicalEnvironmentSettings &settings, VkInstance instance, VkSurfaceKHR surface, GLFWwindow *const window) {
     init_physical_device(instance, surface);
     init_logical_device(surface);
-    init_swap_chain(surface, window);
+    init_swap_chain(settings, surface, window);
     init_image_views();
     std::clog << "Device initialized" << std::endl;
 }
 
 static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
-    const std::vector<const char *> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -54,9 +60,16 @@ static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
     }
 
     VkPhysicalDeviceFeatures supportedFeatures;
-    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+    if (vkGetPhysicalDeviceFeatures(device, &supportedFeatures) != VK_SUCCESS) {
+        LOG_AND_THROW(std::runtime_error("failed to get device features"));
+    }
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    bool is_suitable = indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(device, &properties);
+    std::clog << "Device " << properties.deviceName << " is " << (is_suitable ? "" : "not ") << "suitable" << std::endl;
+    return is_suitable;
 }
 
 void Device::init_physical_device(VkInstance instance, VkSurfaceKHR surface) {
@@ -65,7 +78,7 @@ void Device::init_physical_device(VkInstance instance, VkSurfaceKHR surface) {
 
     if (deviceCount == 0)
     {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        LOG_AND_THROW(std::runtime_error("failed to find GPUs with Vulkan support!"));
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -113,14 +126,9 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    const std::vector<const char *> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    std::vector<const char *> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"};
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
     createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -142,10 +150,14 @@ SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device, V
 {
     SwapChainSupportDetails details;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities) != VK_SUCCESS) {
+        LOG_AND_THROW(std::runtime_error("failed to get surface capabilities"));
+    }
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr) != VK_SUCCESS) {
+        LOG_AND_THROW(std::runtime_error("failed to get surface format"));
+    }
 
     if (formatCount != 0) {
         details.formats.resize(formatCount);
@@ -153,7 +165,9 @@ SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device, V
     }
 
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    if (vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr) != VK_SUCCESS) {
+        LOG_AND_THROW(std::runtime_error("failed to get surface present modes"));
+    }
 
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
@@ -240,7 +254,8 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device, VkSurfaceK
     return indices;
 }
 
-void Device::init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window) {
+void Device::init_swap_chain(const GraphicalEnvironmentSettings &settings, VkSurfaceKHR surface, GLFWwindow *window)
+{
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_physical_device, surface);
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -251,6 +266,10 @@ void Device::init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window) {
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
+    if (imageCount > settings.max_images) {
+        imageCount = settings.max_images;
+    }
+    assert(imageCount > 0);
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -288,6 +307,7 @@ void Device::init_swap_chain(VkSurfaceKHR surface, GLFWwindow* window) {
     vkGetSwapchainImagesKHR(_device, _swap_chain, &imageCount, nullptr);
     _swap_chain_images.resize(imageCount);
     vkGetSwapchainImagesKHR(_device, _swap_chain, &imageCount, _swap_chain_images.data());
+    std::clog << imageCount << " images in swapchain" << std::endl;
 
     _swap_chain_image_format = surfaceFormat.format;
     _swap_chain_extent = extent;

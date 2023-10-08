@@ -75,7 +75,8 @@ namespace VulkanImpl
                                                          const RayTracingPipeline &pipeline,
                                                          const VertexBuffer &vertex_buffer,
                                                          Descriptors &descriptors,
-                                                         uint32_t current_frame);
+                                                         uint32_t current_frame,
+                                                         VkClearValue background);
 
     private:
         CommandBuffers(const CommandBuffers &) = delete;

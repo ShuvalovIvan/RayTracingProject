@@ -29,6 +29,8 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct GraphicalEnvironmentSettings;
+
 class Device {
 public:
     Device() {}
@@ -39,9 +41,9 @@ public:
         std::clog << "Device destroyed" << std::endl;
     }
 
-    void init(VkInstance instance, VkSurfaceKHR surface, GLFWwindow* window);
+    void init(const GraphicalEnvironmentSettings& settings, VkInstance instance, VkSurfaceKHR surface, GLFWwindow *const window);
 
-    void init_swap_chain(VkSurfaceKHR surface, GLFWwindow *window);
+    void init_swap_chain(const GraphicalEnvironmentSettings &settings, VkSurfaceKHR surface, GLFWwindow *window);
 
     void init_image_views();
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <iostream>
 #include <string>
 
@@ -20,5 +21,5 @@ protected:
 
     virtual void add_texture(const std::string &file) = 0;
 
-    virtual void start_interactive_loop() = 0;
+    virtual void start_interactive_loop(int loops = 100, std::chrono::milliseconds sleep = std::chrono::milliseconds(0)) = 0;
 };

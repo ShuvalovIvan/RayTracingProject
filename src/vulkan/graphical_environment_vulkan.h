@@ -24,7 +24,10 @@
 namespace VulkanImpl {
 
 struct GraphicalEnvironmentSettings {
-    int max_frames_in_flight = 2;
+    int max_frames_in_flight = 1;
+    int max_images = 2;
+    int width = 1024;
+    int height = 768;
 };
 
 // Top level class to setup the Vulkan.
@@ -86,11 +89,15 @@ public:
 
     void dump_device_info() const;
 
-    void start_interactive_loop() override;
+    void start_interactive_loop(int loops = 100, std::chrono::milliseconds sleep = std::chrono::milliseconds(0)) override;
 
     void draw_frame();
 
     void recreate_swap_chain();
+
+    void framebuffer_resized() {
+        _framebuffer_resized = true;
+    }
 
 private:
     GraphicalEnvironment(const GraphicalEnvironment &) = delete;
@@ -103,6 +110,7 @@ private:
     void synchronization_init();
 
     void update_uniform_buffer(uint32_t currentImage);
+    void update_backgroung_color();
 
     const GraphicalEnvironmentSettings _settings;
     uint32_t _current_frame = 0;
@@ -124,6 +132,7 @@ private:
     std::vector<Texture> _textures;
 
     UserControl _user_control;
+    VkClearValue _background = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
     std::vector<VkSemaphore> _image_available_semaphores;
     std::vector<VkSemaphore> _render_finished_semaphores;
