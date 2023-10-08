@@ -60,9 +60,7 @@ static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
     }
 
     VkPhysicalDeviceFeatures supportedFeatures;
-    if (vkGetPhysicalDeviceFeatures(device, &supportedFeatures) != VK_SUCCESS) {
-        LOG_AND_THROW(std::runtime_error("failed to get device features"));
-    }
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
     bool is_suitable = indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 
