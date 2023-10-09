@@ -31,6 +31,7 @@ public:
 
     void init(const DescriptorSetLayout &descriptor_set_layout, const UniformBuffers &uniform_buffers, const Texture& texture)
     {
+        assert(_max_frames > 0);
         std::array<VkDescriptorPoolSize, 2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(_max_frames);

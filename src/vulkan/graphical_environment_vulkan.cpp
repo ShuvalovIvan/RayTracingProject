@@ -312,8 +312,11 @@ namespace VulkanImpl
         UniformBufferObject ubo{};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), _device->swap_chain_extent().width / (float)_device->swap_chain_extent().height, 0.1f, 10.0f);
-        ubo.proj[1][1] *= -1;
+        ubo.proj = glm::perspective(
+            glm::radians(45.0f),
+            (float)_device->swap_chain_extent().width / (float)_device->swap_chain_extent().height, 0.1f, 10.0f);
+        // The GLM shipped with Vulkan already has the compatible inversion in place, so the axis flip
+        // "ubo.proj[1][1] *= -1;" mentioned in the tutorial is not necessary.
 
         _uniform_buffers->copy_to_uniform_buffers_for_image(currentImage, ubo);
     }

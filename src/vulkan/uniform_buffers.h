@@ -46,7 +46,9 @@ public:
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 _uniform_buffers[i], _uniform_buffers_memory[i]);
 
-            vkMapMemory(_device.device(), _uniform_buffers_memory[i], 0, bufferSize, 0, &_uniform_buffers_mapped[i]);
+            if (vkMapMemory(_device.device(), _uniform_buffers_memory[i], 0, bufferSize, 0, &_uniform_buffers_mapped[i]) != VK_SUCCESS) {
+                LOG_AND_THROW(std::runtime_error("failed to map memory"));
+            }
         }
     }
 

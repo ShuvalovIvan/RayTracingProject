@@ -7,6 +7,7 @@ target_sources(${PROJECT_LIB}
         vulkan/shader_loader.cpp
         vulkan/texture.cpp
         vulkan/validation.cpp
+        vulkan/vertex_buffer.cpp
     PUBLIC
         graphical_environment.h
 )
