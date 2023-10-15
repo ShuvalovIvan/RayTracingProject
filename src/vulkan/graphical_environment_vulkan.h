@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -14,6 +15,7 @@
 #include "frame_buffers.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
+#include "render_pass.h"
 #include "shader_modules.h"
 #include "texture.h"
 #include "user_control.h"
@@ -41,10 +43,11 @@ public:
         }
         _frame_buffers.reset();
         _device->cleanup_swap_chain();
-        _pipeline.reset();
+        _pipelines.clear();
+        _render_pass.reset();
         _shader_modules.reset();
-        _descriptor_set_layout.reset();
-        _descriptors.reset();
+        _descriptor_set_layouts.clear();
+        _descriptors.clear();
         _uniform_buffers.reset();
         for (int i = 0; i < _settings.max_frames_in_flight; ++i) {
             vkDestroySemaphore(_device->device(), _render_finished_semaphores[i], nullptr);
@@ -84,7 +87,7 @@ public:
     void init_pipeline();
 
     void add_texture(const std::string& file) override {
-        _textures.emplace_back(*_device, file);
+        _textures.emplace_back(std::make_unique<Texture>(*_device, file));
     }
 
     void dump_device_info() const;
@@ -119,17 +122,18 @@ private:
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
     VkSurfaceKHR _surface;
-    std::unique_ptr<RayTracingPipeline> _pipeline;
+    std::map<PipelineType, std::unique_ptr<GraphicsPipeline>> _pipelines;
     std::unique_ptr<Device> _device;
+    std::unique_ptr<RenderPass> _render_pass;
     std::unique_ptr<ShaderModules> _shader_modules;
     std::unique_ptr<FrameBuffers> _frame_buffers;
     std::unique_ptr<VertexBuffer> _vertex_buffer;
     std::unique_ptr<CommandBuffers> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;
-    std::unique_ptr<DescriptorSetLayout> _descriptor_set_layout;
-    std::unique_ptr<Descriptors> _descriptors;
-    std::vector<Texture> _textures;
+    std::map<PipelineType, std::unique_ptr<DescriptorSetLayout>> _descriptor_set_layouts;
+    std::map<PipelineType, std::unique_ptr<Descriptors>> _descriptors;
+    std::vector<std::unique_ptr<Texture>> _textures;
 
     UserControl _user_control;
     VkClearValue _background = {{{0.0f, 0.0f, 0.0f, 1.0f}}};

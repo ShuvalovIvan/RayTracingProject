@@ -5,11 +5,13 @@ namespace VulkanImpl
 
     void CommandBuffers::reset_record_command_buffer(
         VkFramebuffer frame_buffer,
-        VkExtent2D swap_chain_extent, const RayTracingPipeline &pipeline,
+        VkExtent2D swap_chain_extent,
+        std::map<PipelineType, std::unique_ptr<GraphicsPipeline>>& pipelines,
         const VertexBuffer &vertex_buffer,
         Descriptors &descriptors,
         uint32_t current_frame,
-        VkClearValue background)
+        VkClearValue background,
+        const RenderPass &render_pass)
     {
         assert(swap_chain_extent.height > 10);
         assert(swap_chain_extent.width > 10);
@@ -28,7 +30,7 @@ namespace VulkanImpl
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = pipeline.render_pass();
+        renderPassInfo.renderPass = render_pass.render_pass();
         renderPassInfo.framebuffer = frame_buffer;
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swap_chain_extent;
@@ -38,7 +40,7 @@ namespace VulkanImpl
 
         vkCmdBeginRenderPass(_command_buffers[current_frame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline());
+        vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PipelineType::Graphics]->pipeline());
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -61,7 +63,7 @@ namespace VulkanImpl
         vkCmdBindIndexBuffer(_command_buffers[current_frame], vertex_buffer.index_buffer(), 0, VK_INDEX_TYPE_UINT16);
 
         vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipeline.pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
+            pipelines[PipelineType::Graphics]->pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
 
         vkCmdDrawIndexed(_command_buffers[current_frame], static_cast<uint32_t>(vertex_buffer.indices_size()), 1, 0, 0, 0);
 

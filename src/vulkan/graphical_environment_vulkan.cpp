@@ -93,8 +93,13 @@ namespace VulkanImpl
 
         _shader_modules = std::make_unique<ShaderModules>(*_device.get());
 
-        _descriptor_set_layout = std::make_unique<DescriptorSetLayout>(*_device.get());
-        _descriptor_set_layout->init();
+        _descriptor_set_layouts[PipelineType::Graphics] = std::make_unique<DescriptorSetLayout>(*_device.get(), PipelineType::Graphics);
+        _descriptor_set_layouts[PipelineType::Graphics]->init();
+        _descriptor_set_layouts[PipelineType::Compute] = std::make_unique<ComputeDescriptorSetLayout>(*_device.get(), PipelineType::Compute);
+        _descriptor_set_layouts[PipelineType::Compute]->init();
+
+        _render_pass = std::make_unique<RenderPass>(*_device);
+        _render_pass->init();
     }
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
@@ -132,8 +137,8 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::init_pipeline() {
-        _pipeline = std::make_unique<RayTracingPipeline>(*_device.get());
-        _pipeline->init(*_shader_modules, *_descriptor_set_layout);
+        _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
+        _pipelines[PipelineType::Graphics]->init(*_shader_modules, *_descriptor_set_layouts[PipelineType::Graphics], *_render_pass);
         _shader_modules.reset();
         std::clog << "Pipeline initialized" << std::endl;
 
@@ -143,7 +148,7 @@ namespace VulkanImpl
         _command_buffers->init(_surface);
 
         for (auto& texture : _textures) {
-            texture.load(_command_buffers->command_pool());
+            texture->load(_command_buffers->command_pool());
         }
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
@@ -152,9 +157,12 @@ namespace VulkanImpl
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
 
-        _descriptors = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight);
+        _descriptors[PipelineType::Graphics] = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
         // Only first texture is supported for now.
-        _descriptors->init(*_descriptor_set_layout, *_uniform_buffers, _textures[0]);
+        _descriptors[PipelineType::Graphics]->init(*_descriptor_set_layouts[PipelineType::Graphics], *_uniform_buffers, *_textures[0]);
+
+        _descriptors[PipelineType::Compute] = std::make_unique<ComputeDescriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
+        _descriptors[PipelineType::Compute]->init(*_descriptor_set_layouts[PipelineType::Compute], *_uniform_buffers, *_textures[0]);
 
         synchronization_init();
     }
@@ -163,7 +171,7 @@ namespace VulkanImpl
         _frame_buffers.reset();
         auto image_views = _device->swap_chain_image_views();
         _frame_buffers = std::make_unique<FrameBuffers>(*_device.get(), image_views.size());
-        _frame_buffers->init(_pipeline->render_pass(), image_views);
+        _frame_buffers->init(*_render_pass, image_views);
         std::clog << "Frame buffers initialized" << std::endl;
     }
 
@@ -247,11 +255,12 @@ namespace VulkanImpl
         assert(_current_frame < static_cast<size_t>(_frame_buffers->size()));
         _command_buffers->reset_record_command_buffer(_frame_buffers->frame_buffers()[imageIndex],
                                                       _device->swap_chain_extent(),
-                                                      *_pipeline,
+                                                      _pipelines,
                                                       *_vertex_buffer,
-                                                      *_descriptors,
+                                                      *_descriptors[PipelineType::Graphics],
                                                       _current_frame,
-                                                      _background);
+                                                      _background,
+                                                      *_render_pass);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

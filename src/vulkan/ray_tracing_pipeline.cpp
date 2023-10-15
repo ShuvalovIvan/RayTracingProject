@@ -7,14 +7,14 @@
 
 namespace VulkanImpl {
 
-void RayTracingPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout)
+void GraphicsPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass& render_pass)
 {
-    init_render_pass();
+    assert(descriptor_set_layout.type() == PipelineType::Graphics);
 
-    init_graphics_pipeline(shader_modules, descriptor_set_layout);
+    init_graphics_pipeline(shader_modules, descriptor_set_layout, render_pass);
 }
 
-void RayTracingPipeline::init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout)
+void GraphicsPipeline::init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -31,51 +31,7 @@ void RayTracingPipeline::init_pipeline_layout(DescriptorSetLayout &descriptor_se
     std::clog << "Pipeline layout created" << std::endl;
 }
 
-void RayTracingPipeline::init_render_pass()
-{
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = _device.format();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(_device.device(), &renderPassInfo, nullptr, &_render_pass) != VK_SUCCESS) {
-        LOG_AND_THROW(std::runtime_error("failed to create render pass!"));
-    }
-    std::clog << "Render pass initialized" << std::endl;
-}
-
-void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout)
+void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass)
 {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -161,9 +117,8 @@ void RayTracingPipeline::init_graphics_pipeline(ShaderModules &shader_modules, D
     pipelineInfo.basePipelineIndex = -1; // Optional
 
     assert(_pipeline_layout);
-    assert(_render_pass);
     pipelineInfo.layout = _pipeline_layout;
-    pipelineInfo.renderPass = _render_pass;
+    pipelineInfo.renderPass = render_pass.render_pass();
     pipelineInfo.subpass = 0;
 
     if (auto err = vkCreateGraphicsPipelines(_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);

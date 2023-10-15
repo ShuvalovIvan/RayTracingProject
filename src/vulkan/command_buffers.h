@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <map>
 
 #include "device.h"
 #include "descriptors.h"
@@ -33,7 +34,7 @@ namespace VulkanImpl
             VkCommandPoolCreateInfo poolInfo{};
             poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+            poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily.value();
 
             if (vkCreateCommandPool(_device.device(), &poolInfo, nullptr, &_command_pool) != VK_SUCCESS)
             {
@@ -72,11 +73,12 @@ namespace VulkanImpl
 
         void CommandBuffers::reset_record_command_buffer(VkFramebuffer frame_buffer,
                                                          VkExtent2D swap_chain_extent,
-                                                         const RayTracingPipeline &pipeline,
+                                                         std::map<PipelineType, std::unique_ptr<GraphicsPipeline>>& pipelines,
                                                          const VertexBuffer &vertex_buffer,
                                                          Descriptors &descriptors,
                                                          uint32_t current_frame,
-                                                         VkClearValue background);
+                                                         VkClearValue background,
+                                                         const RenderPass &render_pass);
 
     private:
         CommandBuffers(const CommandBuffers &) = delete;

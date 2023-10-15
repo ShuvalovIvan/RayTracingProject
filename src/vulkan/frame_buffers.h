@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "render_pass.h"
+
 namespace VulkanImpl
 {
 
@@ -22,7 +24,7 @@ namespace VulkanImpl
             std::clog << "Frame buffer destroyed" << std::endl;
         }
 
-        void init(VkRenderPass render_pass, const std::vector<VkImageView>& swap_chain_image_views)
+        void init(const RenderPass& render_pass, const std::vector<VkImageView>& swap_chain_image_views)
         {
             assert(_device.swap_chain_extent().width > 10);
             assert(_device.swap_chain_extent().height > 10);
@@ -33,7 +35,7 @@ namespace VulkanImpl
                 VkImageView attachments[] = {swap_chain_image_views[i]};
                 VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-                framebufferInfo.renderPass = render_pass;
+                framebufferInfo.renderPass = render_pass.render_pass();
                 framebufferInfo.attachmentCount = 1;
                 framebufferInfo.pAttachments = attachments;
                 framebufferInfo.width = _device.swap_chain_extent().width;

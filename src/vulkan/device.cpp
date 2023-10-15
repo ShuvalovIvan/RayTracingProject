@@ -100,7 +100,7 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
     QueueFamilyIndices indices = findQueueFamilies(_physical_device, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -135,7 +135,8 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
         LOG_AND_THROW(std::runtime_error("failed to create logical device!"));
     }
 
-    vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphics_queue);
+    vkGetDeviceQueue(_device, indices.graphicsAndComputeFamily.value(), 0, &_graphics_queue);
+    vkGetDeviceQueue(_device, indices.graphicsAndComputeFamily.value(), 0, &_compute_queue);
     vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_present_queue);
     if (_graphics_queue == VK_NULL_HANDLE || _present_queue == VK_NULL_HANDLE)
     {
@@ -230,7 +231,7 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device, VkSurfaceK
     {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
-            indices.graphicsFamily = i;
+            indices.graphicsAndComputeFamily = i;
         }
 
         VkBool32 presentSupport = false;
@@ -281,9 +282,9 @@ void Device::init_swap_chain(const GraphicalEnvironmentSettings &settings, VkSur
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndices indices = findQueueFamilies(_physical_device, surface);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    uint32_t queueFamilyIndices[] = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value()};
 
-    if (indices.graphicsFamily != indices.presentFamily) {
+    if (indices.graphicsAndComputeFamily != indices.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;

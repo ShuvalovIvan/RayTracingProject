@@ -13,12 +13,12 @@ namespace VulkanImpl {
 
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> graphicsAndComputeFamily;
     std::optional<uint32_t> presentFamily;
 
     bool isComplete()
     {
-        return graphicsFamily.has_value() && presentFamily.has_value();
+        return graphicsAndComputeFamily.has_value() && presentFamily.has_value();
     }
 };
 
@@ -27,6 +27,11 @@ struct SwapChainSupportDetails
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
+};
+
+enum class PipelineType {
+    Graphics,
+    Compute
 };
 
 struct GraphicalEnvironmentSettings;
@@ -114,6 +119,7 @@ private:
     VkDevice _device = VK_NULL_HANDLE;
     VkPhysicalDevice _physical_device = VK_NULL_HANDLE;
     VkQueue _graphics_queue = VK_NULL_HANDLE;
+    VkQueue _compute_queue = VK_NULL_HANDLE;
     VkQueue _present_queue = VK_NULL_HANDLE;
     VkSwapchainKHR _swap_chain = VK_NULL_HANDLE;
     std::vector<VkImage> _swap_chain_images;

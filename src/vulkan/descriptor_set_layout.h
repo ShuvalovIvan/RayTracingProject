@@ -9,14 +9,15 @@ namespace VulkanImpl
 
 class DescriptorSetLayout {
 public:
-    DescriptorSetLayout(const Device& device) : _device(device) {}
+    DescriptorSetLayout(const Device &device, PipelineType type) : _device(device), _type(type) {}
 
-    ~DescriptorSetLayout() {
+    virtual ~DescriptorSetLayout() {
         vkDestroyDescriptorSetLayout(_device.device(), _descriptor_set_layout, nullptr);
     }
 
-    void init()
+    virtual void init()
     {
+        assert(_type == PipelineType::Graphics);
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -44,6 +45,10 @@ public:
         std::clog << "Descriptor set layout initialized" << std::endl;
     }
 
+    virtual PipelineType type() const {
+        return PipelineType::Graphics;
+    }
+
     VkDescriptorSetLayout descriptor_set_layout() const
     {
         return _descriptor_set_layout;
@@ -54,12 +59,59 @@ public:
         return _descriptor_set_layout;
     }
 
-private:
+protected:
     DescriptorSetLayout(const DescriptorSetLayout &) = delete;
     DescriptorSetLayout &operator=(const DescriptorSetLayout &) = delete;
 
     const Device &_device;
+    PipelineType _type;
     VkDescriptorSetLayout _descriptor_set_layout;
+};
+
+class ComputeDescriptorSetLayout : public DescriptorSetLayout
+{
+public:
+    ComputeDescriptorSetLayout(const Device &device, PipelineType type)
+        : DescriptorSetLayout(device, type) {}
+
+    PipelineType type() const override
+    {
+        return PipelineType::Compute;
+    }
+
+    void init() override
+    {
+        assert(_type == PipelineType::Compute);
+        std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
+        layoutBindings[0].binding = 0;
+        layoutBindings[0].descriptorCount = 1;
+        layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBindings[0].pImmutableSamplers = nullptr;
+        layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutBindings[1].binding = 1;
+        layoutBindings[1].descriptorCount = 1;
+        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        layoutBindings[1].pImmutableSamplers = nullptr;
+        layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutBindings[2].binding = 2;
+        layoutBindings[2].descriptorCount = 1;
+        layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        layoutBindings[2].pImmutableSamplers = nullptr;
+        layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 3;
+        layoutInfo.pBindings = layoutBindings.data();
+
+        if (vkCreateDescriptorSetLayout(_device.device(), &layoutInfo, nullptr, &_descriptor_set_layout) != VK_SUCCESS)
+        {
+            LOG_AND_THROW(std::runtime_error("failed to create descriptor set layout!"));
+        }
+        std::clog << "Descriptor set layout initialized" << std::endl;
+    }
 };
 
 } // namespace
