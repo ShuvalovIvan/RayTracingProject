@@ -7,8 +7,10 @@
 namespace VulkanImpl
 {
 
-VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module()
+VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module(const Device *device)
 {
+    _device = device;
+    assert(device != nullptr);
     std::ifstream file(_file, std::ios::ate | std::ios::binary);
 
     if (!file.is_open())
@@ -35,7 +37,7 @@ VkPipelineShaderStageCreateInfo ShaderLoader::load_shader_module()
     module_create_info.flags = 0;
     module_create_info.pNext = nullptr;
 
-    if (VK_SUCCESS != vkCreateShaderModule(_device.device(), &module_create_info, nullptr, &_shader_module))
+    if (VK_SUCCESS != vkCreateShaderModule(_device->device(), &module_create_info, nullptr, &_shader_module))
     {
         LOG_AND_THROW(std::runtime_error("create shader module"));
     }

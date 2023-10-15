@@ -94,7 +94,7 @@ void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, Des
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
-    auto loaded_shaders = shader_modules.load_all_stages();
+    auto loaded_shaders = shader_modules.load_all_stages(_device, PipelineType::Graphics);
     assert(!loaded_shaders.empty());
 
     init_pipeline_layout(descriptor_set_layout);
@@ -125,6 +125,34 @@ void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, Des
         err != VK_SUCCESS) {
         auto msg = std::string("failed to create graphics pipeline! err=") + std::to_string(err);
         LOG_AND_THROW(std::runtime_error(msg));
+    }
+}
+
+void ComputePipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass)
+{
+    assert(descriptor_set_layout.type() == PipelineType::Compute);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout.descriptor_set_layout();
+
+    if (vkCreatePipelineLayout(_device.device(), &pipelineLayoutInfo, nullptr, &_pipeline_layout) != VK_SUCCESS)
+    {
+        LOG_AND_THROW(std::runtime_error("failed to create pipeline layout!"));
+    }
+
+    auto loaded_shaders = shader_modules.load_all_stages(_device, PipelineType::Compute);
+    assert(!loaded_shaders.empty());
+
+    VkComputePipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    pipelineInfo.layout = _pipeline_layout;
+    pipelineInfo.stage = loaded_shaders[0];
+
+    if (vkCreateComputePipelines(_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
+    {
+        LOG_AND_THROW(std::runtime_error("failed to create compute pipeline!"));
     }
 }
 

@@ -91,8 +91,6 @@ namespace VulkanImpl
         _device = std::make_unique<Device>();
         _device->init(_settings, _instance, _surface, _window);
 
-        _shader_modules = std::make_unique<ShaderModules>(*_device.get());
-
         _descriptor_set_layouts[PipelineType::Graphics] = std::make_unique<DescriptorSetLayout>(*_device.get(), PipelineType::Graphics);
         _descriptor_set_layouts[PipelineType::Graphics]->init();
         _descriptor_set_layouts[PipelineType::Compute] = std::make_unique<ComputeDescriptorSetLayout>(*_device.get(), PipelineType::Compute);
@@ -100,6 +98,12 @@ namespace VulkanImpl
 
         _render_pass = std::make_unique<RenderPass>(*_device);
         _render_pass->init();
+
+        for (const auto& f : _texture_files) {
+            _textures.emplace_back(std::make_unique<Texture>(*_device, f));
+        }
+
+        init_pipeline();
     }
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
@@ -144,15 +148,17 @@ namespace VulkanImpl
 
         frame_buffers_init();
 
-        _command_buffers = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight);
-        _command_buffers->init(_surface);
+        _command_buffers[PipelineType::Graphics] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
+        _command_buffers[PipelineType::Graphics]->init(_surface);
+        _command_buffers[PipelineType::Compute] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
+        _command_buffers[PipelineType::Compute]->init(_surface);
 
         for (auto& texture : _textures) {
-            texture->load(_command_buffers->command_pool());
+            texture->load(_command_buffers[PipelineType::Graphics]->command_pool());
         }
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
-        _vertex_buffer->init(_command_buffers->command_pool());
+        _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->command_pool());
 
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
@@ -253,14 +259,15 @@ namespace VulkanImpl
         vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
 
         assert(_current_frame < static_cast<size_t>(_frame_buffers->size()));
-        _command_buffers->reset_record_command_buffer(_frame_buffers->frame_buffers()[imageIndex],
-                                                      _device->swap_chain_extent(),
-                                                      _pipelines,
-                                                      *_vertex_buffer,
-                                                      *_descriptors[PipelineType::Graphics],
-                                                      _current_frame,
-                                                      _background,
-                                                      *_render_pass);
+        _command_buffers[PipelineType::Graphics]->reset_record_command_buffer(
+            _frame_buffers->frame_buffers()[imageIndex],
+            _device->swap_chain_extent(),
+            _pipelines,
+            *_vertex_buffer,
+            *_descriptors[PipelineType::Graphics],
+            _current_frame,
+            _background,
+            *_render_pass);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -272,7 +279,7 @@ namespace VulkanImpl
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &_command_buffers->command_buffer(_current_frame);
+        submitInfo.pCommandBuffers = &_command_buffers[PipelineType::Graphics]->command_buffer(_current_frame);
 
         assert(_current_frame < _render_finished_semaphores.size());
         VkSemaphore signalSemaphores[] = {_render_finished_semaphores[_current_frame]};

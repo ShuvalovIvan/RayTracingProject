@@ -15,7 +15,7 @@ namespace VulkanImpl
     class CommandBuffers
     {
     public:
-        CommandBuffers(const Device& device, int size) : _device(device), _size(size) {}
+        CommandBuffers(const Device& device, int size, PipelineType type) : _device(device), _size(size), _type(type) {}
 
         ~CommandBuffers() {
             for (auto cb : _command_buffers) {
@@ -55,6 +55,10 @@ namespace VulkanImpl
             }
         }
 
+        PipelineType type() const {
+            return _type;
+        }
+
         VkCommandBuffer command_buffer(int index) const
         {
             assert(index < _command_buffers.size());
@@ -86,6 +90,7 @@ namespace VulkanImpl
 
         const Device &_device;
         const int _size;
+        const PipelineType _type;
 
         VkCommandPool _command_pool;
         std::vector<VkCommandBuffer> _command_buffers;

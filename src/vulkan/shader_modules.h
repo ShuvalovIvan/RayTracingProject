@@ -12,19 +12,23 @@ namespace VulkanImpl
     class ShaderModules
     {
     public:
-        ShaderModules(Device &device) : _device(device) {}
+        ShaderModules() {}
 
         ~ShaderModules() = default;
 
         void add_shader_module(const std::string& file, VkShaderStageFlagBits stage) {
-            _loaders.emplace_back(file, _device, stage);
+            _loaders.emplace_back(file, stage);
         }
 
-        std::vector<VkPipelineShaderStageCreateInfo> load_all_stages() {
+        std::vector<VkPipelineShaderStageCreateInfo> load_all_stages(const Device &device, PipelineType type) {
             std::vector<VkPipelineShaderStageCreateInfo> result;
 
             for (auto& loader : _loaders) {
-                result.push_back(loader.load_shader_module());
+                if (type == PipelineType::Compute && loader.stage() == VK_SHADER_STAGE_COMPUTE_BIT) {
+                    result.push_back(loader.load_shader_module(&device));
+                } else if (type == PipelineType::Graphics && loader.stage() != VK_SHADER_STAGE_COMPUTE_BIT) {
+                    result.push_back(loader.load_shader_module(&device));
+                }
             }
             return result;
         }
@@ -33,7 +37,6 @@ namespace VulkanImpl
         ShaderModules(const ShaderModules &) = delete;
         ShaderModules &operator=(const ShaderModules &) = delete;
 
-        const Device &_device;
         std::vector<ShaderLoader> _loaders;
     };
 

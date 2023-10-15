@@ -25,7 +25,10 @@ public:
 
 protected:
     Pipeline(const Device& device) : _device(device) {}
-    virtual ~Pipeline() {}
+    virtual ~Pipeline() {
+        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
+        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
+    }
 
     virtual void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass& render_pass) = 0;
 
@@ -37,10 +40,9 @@ protected:
 class GraphicsPipeline : public Pipeline
 {
 public:
-    GraphicsPipeline(const Device& device) : Pipeline(device) {}
-    ~GraphicsPipeline() override {
-        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
-        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
+    GraphicsPipeline(const Device &device) : Pipeline(device) {}
+    ~GraphicsPipeline() override
+    {
     }
 
     void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) override;
@@ -53,4 +55,24 @@ private:
     void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass);
 };
 
-}  // namespace
+class ComputePipeline : public Pipeline
+{
+public:
+    ComputePipeline(const Device &device) : Pipeline(device) {}
+    ~ComputePipeline() override
+    {
+        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
+        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
+    }
+
+    void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) override;
+
+private:
+    ComputePipeline(const ComputePipeline &) = delete;
+    ComputePipeline &operator=(const ComputePipeline &) = delete;
+
+    void init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout);
+    void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass);
+};
+
+} // namespace

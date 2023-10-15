@@ -35,7 +35,10 @@ struct GraphicalEnvironmentSettings {
 // Top level class to setup the Vulkan.
 class GraphicalEnvironment : public ::GraphicalEnvironment {
 public:
-    GraphicalEnvironment(GraphicalEnvironmentSettings settings = {}) {}
+    GraphicalEnvironment(GraphicalEnvironmentSettings settings = {}) {
+        _shader_modules = std::make_unique<ShaderModules>();
+    }
+
     ~GraphicalEnvironment() override {
         std::clog << "Tearing down" << std::endl;
         for (auto f : _in_flight_fences) {
@@ -55,7 +58,7 @@ public:
             vkDestroyFence(_device->device(), _in_flight_fences[i], nullptr);
         }
         _vertex_buffer.reset();
-        _command_buffers.reset();
+        _command_buffers.clear();
         _textures.clear();
 
         _device.reset();
@@ -83,11 +86,8 @@ public:
         std::clog << "Shaders loaded" << std::endl;
     }
 
-    // Separate init that requires the shaders to be loaded.
-    void init_pipeline();
-
     void add_texture(const std::string& file) override {
-        _textures.emplace_back(std::make_unique<Texture>(*_device, file));
+        _texture_files.push_back(file);
     }
 
     void dump_device_info() const;
@@ -105,6 +105,8 @@ public:
 private:
     GraphicalEnvironment(const GraphicalEnvironment &) = delete;
     GraphicalEnvironment &operator=(const GraphicalEnvironment &) = delete;
+
+    void init_pipeline();
 
     void window_init();
     void surface_init();
@@ -128,11 +130,13 @@ private:
     std::unique_ptr<ShaderModules> _shader_modules;
     std::unique_ptr<FrameBuffers> _frame_buffers;
     std::unique_ptr<VertexBuffer> _vertex_buffer;
-    std::unique_ptr<CommandBuffers> _command_buffers;
+    std::map<PipelineType, std::unique_ptr<CommandBuffers>> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;
     std::map<PipelineType, std::unique_ptr<DescriptorSetLayout>> _descriptor_set_layouts;
     std::map<PipelineType, std::unique_ptr<Descriptors>> _descriptors;
+
+    std::vector<std::string> _texture_files;
     std::vector<std::unique_ptr<Texture>> _textures;
 
     UserControl _user_control;
