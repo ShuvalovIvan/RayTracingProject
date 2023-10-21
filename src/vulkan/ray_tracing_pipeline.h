@@ -13,6 +13,14 @@ namespace VulkanImpl {
 
 class Pipeline {
 public:
+    virtual ~Pipeline()
+    {
+        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
+        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
+    }
+
+    virtual void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) = 0;
+
     VkPipeline pipeline() const
     {
         return _pipeline;
@@ -25,12 +33,6 @@ public:
 
 protected:
     Pipeline(const Device& device) : _device(device) {}
-    virtual ~Pipeline() {
-        vkDestroyPipeline(_device.device(), _pipeline, nullptr);
-        vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
-    }
-
-    virtual void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass& render_pass) = 0;
 
     const Device &_device;
     VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;

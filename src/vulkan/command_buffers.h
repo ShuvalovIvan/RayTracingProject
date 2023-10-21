@@ -75,14 +75,18 @@ namespace VulkanImpl
             return _command_pool;
         }
 
-        void CommandBuffers::reset_record_command_buffer(VkFramebuffer frame_buffer,
-                                                         VkExtent2D swap_chain_extent,
-                                                         std::map<PipelineType, std::unique_ptr<GraphicsPipeline>>& pipelines,
-                                                         const VertexBuffer &vertex_buffer,
-                                                         Descriptors &descriptors,
-                                                         uint32_t current_frame,
-                                                         VkClearValue background,
-                                                         const RenderPass &render_pass);
+        void reset_record_graphics_command_buffer(VkFramebuffer frame_buffer,
+                                                  VkExtent2D swap_chain_extent,
+                                                  std::map<PipelineType, std::unique_ptr<Pipeline>>& pipelines,
+                                                  const VertexBuffer &vertex_buffer,
+                                                  Descriptors &descriptors,
+                                                  uint32_t current_frame,
+                                                  VkClearValue background,
+                                                  const RenderPass &render_pass);
+
+        void reset_record_compute_command_buffer(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
+                                                 Descriptors &descriptors,
+                                                 uint32_t current_frame);
 
     private:
         CommandBuffers(const CommandBuffers &) = delete;

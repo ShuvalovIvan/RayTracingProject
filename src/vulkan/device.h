@@ -94,6 +94,10 @@ public:
         return _graphics_queue;
     }
 
+    VkQueue compute_queue() const {
+        return _compute_queue;
+    }
+
     VkQueue present_queue() {
         return _present_queue;
     }

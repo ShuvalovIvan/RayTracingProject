@@ -1,7 +1,7 @@
 
 file(GLOB font_files fonts/*.ttf)
 file(GLOB model_files models/*.obj models/*.mtl)
-file(GLOB shader_files shaders/*.vert shaders/*.frag shaders/*.rgen shaders/*.rchit shaders/*.rint shaders/*.rmiss)
+file(GLOB shader_files shaders/*.vert shaders/*.frag shaders/*.comp shaders/*.rgen shaders/*.rchit shaders/*.rint shaders/*.rmiss)
 # file(GLOB shader_files_mesh shaders/meshshader/*.vert shaders/meshshader/*.frag shaders/meshshader/*.mesh shaders/meshshader/*.task)
 # list(APPEND shader_files ${shader_files_mesh})
 file(GLOB texture_files textures/*.jpg textures/*.png textures/*.txt)

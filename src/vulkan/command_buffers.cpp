@@ -3,76 +3,109 @@
 namespace VulkanImpl
 {
 
-    void CommandBuffers::reset_record_command_buffer(
-        VkFramebuffer frame_buffer,
-        VkExtent2D swap_chain_extent,
-        std::map<PipelineType, std::unique_ptr<GraphicsPipeline>>& pipelines,
-        const VertexBuffer &vertex_buffer,
-        Descriptors &descriptors,
-        uint32_t current_frame,
-        VkClearValue background,
-        const RenderPass &render_pass)
+void CommandBuffers::reset_record_graphics_command_buffer(
+    VkFramebuffer frame_buffer,
+    VkExtent2D swap_chain_extent,
+    std::map<PipelineType, std::unique_ptr<Pipeline>>& pipelines,
+    const VertexBuffer &vertex_buffer,
+    Descriptors &descriptors,
+    uint32_t current_frame,
+    VkClearValue background,
+    const RenderPass &render_pass)
+{
+    assert(swap_chain_extent.height > 10);
+    assert(swap_chain_extent.width > 10);
+    assert(current_frame < _command_buffers.size());
+    if (vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS) {
+        LOG_AND_THROW(std::runtime_error("failed to reset command buffer!"));
+    }
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    if (vkBeginCommandBuffer(_command_buffers[current_frame], &beginInfo) != VK_SUCCESS)
     {
-        assert(swap_chain_extent.height > 10);
-        assert(swap_chain_extent.width > 10);
-        assert(current_frame < _command_buffers.size());
-        if (vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS) {
-            LOG_AND_THROW(std::runtime_error("failed to reset command buffer!"));
-        }
+        LOG_AND_THROW(std::runtime_error("failed to begin recording command buffer!"));
+    }
 
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = render_pass.render_pass();
+    renderPassInfo.framebuffer = frame_buffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swap_chain_extent;
 
-        if (vkBeginCommandBuffer(_command_buffers[current_frame], &beginInfo) != VK_SUCCESS)
-        {
-            LOG_AND_THROW(std::runtime_error("failed to begin recording command buffer!"));
-        }
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &background;
 
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = render_pass.render_pass();
-        renderPassInfo.framebuffer = frame_buffer;
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swap_chain_extent;
+    vkCmdBeginRenderPass(_command_buffers[current_frame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &background;
+    vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PipelineType::Graphics]->pipeline());
 
-        vkCmdBeginRenderPass(_command_buffers[current_frame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)swap_chain_extent.width;
+    viewport.height = (float)swap_chain_extent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(_command_buffers[current_frame], 0, 1, &viewport);
 
-        vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PipelineType::Graphics]->pipeline());
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = swap_chain_extent;
+    vkCmdSetScissor(_command_buffers[current_frame], 0, 1, &scissor);
 
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)swap_chain_extent.width;
-        viewport.height = (float)swap_chain_extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(_command_buffers[current_frame], 0, 1, &viewport);
+    VkBuffer vertexBuffers[] = {vertex_buffer.vertex_buffer()};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(_command_buffers[current_frame], 0, 1, vertexBuffers, offsets);
 
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swap_chain_extent;
-        vkCmdSetScissor(_command_buffers[current_frame], 0, 1, &scissor);
+    vkCmdBindIndexBuffer(_command_buffers[current_frame], vertex_buffer.index_buffer(), 0, VK_INDEX_TYPE_UINT16);
 
-        VkBuffer vertexBuffers[] = {vertex_buffer.vertex_buffer()};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(_command_buffers[current_frame], 0, 1, vertexBuffers, offsets);
+    vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipelines[PipelineType::Graphics]->pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
 
-        vkCmdBindIndexBuffer(_command_buffers[current_frame], vertex_buffer.index_buffer(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdDrawIndexed(_command_buffers[current_frame], static_cast<uint32_t>(vertex_buffer.indices_size()), 1, 0, 0, 0);
 
-        vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipelines[PipelineType::Graphics]->pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
+    vkCmdEndRenderPass(_command_buffers[current_frame]);
 
-        vkCmdDrawIndexed(_command_buffers[current_frame], static_cast<uint32_t>(vertex_buffer.indices_size()), 1, 0, 0, 0);
+    if (vkEndCommandBuffer(_command_buffers[current_frame]) != VK_SUCCESS)
+    {
+        LOG_AND_THROW(std::runtime_error("failed to record command buffer!"));
+    }
+}
 
-        vkCmdEndRenderPass(_command_buffers[current_frame]);
+void CommandBuffers::reset_record_compute_command_buffer(
+    std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
+    Descriptors &descriptors,
+    uint32_t current_frame)
+{
+    assert(current_frame < _command_buffers.size());
+    if (vkResetCommandBuffer(_command_buffers[current_frame], /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS)
+    {
+        LOG_AND_THROW(std::runtime_error("failed to reset command buffer!"));
+    }
 
-        if (vkEndCommandBuffer(_command_buffers[current_frame]) != VK_SUCCESS)
-        {
-            LOG_AND_THROW(std::runtime_error("failed to record command buffer!"));
-        }
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    if (vkBeginCommandBuffer(_command_buffers[current_frame], &beginInfo) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to begin recording compute command buffer!");
+    }
+
+    auto& pipeline = pipelines[PipelineType::Compute];
+    vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->pipeline());
+
+    vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->pipeline_layout(), 0, 1,
+        &descriptors.descriptor(current_frame), 0, nullptr);
+
+    vkCmdDispatch(_command_buffers[current_frame], 1 /*PARTICLE_COUNT / 256*/, 1, 1);
+
+    if (vkEndCommandBuffer(_command_buffers[current_frame]) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to record compute command buffer!");
+    }
 }
 
 }  // namespace

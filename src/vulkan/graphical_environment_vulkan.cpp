@@ -143,6 +143,8 @@ namespace VulkanImpl
     void GraphicalEnvironment::init_pipeline() {
         _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
         _pipelines[PipelineType::Graphics]->init(*_shader_modules, *_descriptor_set_layouts[PipelineType::Graphics], *_render_pass);
+        _pipelines[PipelineType::Compute] = std::make_unique<ComputePipeline>(*_device.get());
+        _pipelines[PipelineType::Compute]->init(*_shader_modules, *_descriptor_set_layouts[PipelineType::Compute], *_render_pass);
         _shader_modules.reset();
         std::clog << "Pipeline initialized" << std::endl;
 
@@ -170,7 +172,7 @@ namespace VulkanImpl
         _descriptors[PipelineType::Compute] = std::make_unique<ComputeDescriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
         _descriptors[PipelineType::Compute]->init(*_descriptor_set_layouts[PipelineType::Compute], *_uniform_buffers, *_textures[0]);
 
-        synchronization_init();
+        frames_init();
     }
 
     void GraphicalEnvironment::frame_buffers_init() {
@@ -181,26 +183,11 @@ namespace VulkanImpl
         std::clog << "Frame buffers initialized" << std::endl;
     }
 
-    void GraphicalEnvironment::synchronization_init() {
-        _image_available_semaphores.resize(_settings.max_frames_in_flight);
-        _render_finished_semaphores.resize(_settings.max_frames_in_flight);
-        _in_flight_fences.resize(_settings.max_frames_in_flight);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
+    void GraphicalEnvironment::frames_init() {
         for (size_t i = 0; i < _settings.max_frames_in_flight; i++)
         {
-            if (vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_image_available_semaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(_device->device(), &semaphoreInfo, nullptr, &_render_finished_semaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(_device->device(), &fenceInfo, nullptr, &_in_flight_fences[i]) != VK_SUCCESS)
-            {
-                LOG_AND_THROW(std::runtime_error("failed to create synchronization objects for a frame!"));
-            }
+            _frames.push_back(std::make_unique<Frame>(*_device));
+            _frames.back()->init();
         }
     }
 
@@ -220,32 +207,69 @@ namespace VulkanImpl
         std::clog << std::endl;
     }
 
-    void GraphicalEnvironment::start_interactive_loop(int loops, std::chrono::milliseconds sleep)
+    void GraphicalEnvironment::start_interactive_loop(std::chrono::milliseconds duration)
     {
-        for (int loop = 0; !glfwWindowShouldClose(_window) && (loops <= 0 || loop < loops); ++loop)
+        auto startTime = std::chrono::high_resolution_clock::now();
+
+        while (!glfwWindowShouldClose(_window) &&
+               (std::chrono::high_resolution_clock::now() - startTime) < duration)
         {
             glfwPollEvents();
             draw_frame();
-            if (sleep > std::chrono::milliseconds(0)) {
-                std::this_thread::sleep_for(sleep);
-            }
         }
 
         vkDeviceWaitIdle(_device->device());
     }
 
     void GraphicalEnvironment::draw_frame() {
-        assert(_current_frame < _in_flight_fences.size());
-        vkWaitForFences(_device->device(), 1, &_in_flight_fences[_current_frame], VK_TRUE, UINT64_MAX);
+        draw_frame_computational();
+        draw_frame_graphical();
+    }
+
+    void GraphicalEnvironment::draw_frame_computational() {
+        PipelineType current_pipeline_type = PipelineType::Compute;
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        assert(_current_frame < _frames.size());
+        auto &current_frame = *_frames[_current_frame];
+        vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
+
+        update_uniform_buffer(_current_frame);
+
+        vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
+
+        _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
+            _pipelines,
+            *_descriptors[current_pipeline_type],
+            _current_frame);
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &current_frame.render_finished_semaphore(current_pipeline_type);
+
+        if (vkQueueSubmit(_device->compute_queue(), 1, &submitInfo, current_frame.in_flight_fence(current_pipeline_type)) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to submit compute command buffer!");
+        };
+    }
+
+    void GraphicalEnvironment::draw_frame_graphical()
+    {
+        PipelineType current_pipeline_type = PipelineType::Graphics;
+        assert(_current_frame < _frames.size());
+        auto& current_frame = *_frames[_current_frame];
+        vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        assert(_current_frame < _image_available_semaphores.size());
         VkResult result = vkAcquireNextImageKHR(_device->device(), _device->swap_chain(), UINT64_MAX,
-                                                _image_available_semaphores[_current_frame], VK_NULL_HANDLE, &imageIndex);
+                                                current_frame.image_available_semaphore(), VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             recreate_swap_chain();
+
             return;
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -253,18 +277,17 @@ namespace VulkanImpl
             LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image! Err: " + std::to_string(result)));
         }
 
-        update_uniform_buffer(_current_frame);
         update_backgroung_color();
 
-        vkResetFences(_device->device(), 1, &_in_flight_fences[_current_frame]);
+        vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
 
         assert(_current_frame < static_cast<size_t>(_frame_buffers->size()));
-        _command_buffers[PipelineType::Graphics]->reset_record_command_buffer(
+        _command_buffers[current_pipeline_type]->reset_record_graphics_command_buffer(
             _frame_buffers->frame_buffers()[imageIndex],
             _device->swap_chain_extent(),
             _pipelines,
             *_vertex_buffer,
-            *_descriptors[PipelineType::Graphics],
+            *_descriptors[current_pipeline_type],
             _current_frame,
             _background,
             *_render_pass);
@@ -272,21 +295,20 @@ namespace VulkanImpl
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {_image_available_semaphores[_current_frame]};
+        VkSemaphore waitSemaphores[] = {current_frame.image_available_semaphore()};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &_command_buffers[PipelineType::Graphics]->command_buffer(_current_frame);
+        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
 
-        assert(_current_frame < _render_finished_semaphores.size());
-        VkSemaphore signalSemaphores[] = {_render_finished_semaphores[_current_frame]};
+        VkSemaphore signalSemaphores[] = {current_frame.render_finished_semaphore(current_pipeline_type)};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(_device->graphics_queue(), 1, &submitInfo, _in_flight_fences[_current_frame]) != VK_SUCCESS)
+        if (vkQueueSubmit(_device->graphics_queue(), 1, &submitInfo, current_frame.in_flight_fence(current_pipeline_type)) != VK_SUCCESS)
         {
             LOG_AND_THROW(std::runtime_error("failed to submit draw command buffer!"));
         }

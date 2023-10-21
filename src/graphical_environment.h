@@ -21,5 +21,5 @@ protected:
 
     virtual void add_texture(const std::string &file) = 0;
 
-    virtual void start_interactive_loop(int loops = 100, std::chrono::milliseconds sleep = std::chrono::milliseconds(0)) = 0;
+    virtual void start_interactive_loop(std::chrono::milliseconds duration = std::chrono::seconds(3)) = 0;
 };

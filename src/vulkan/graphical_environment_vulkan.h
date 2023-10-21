@@ -12,6 +12,7 @@
 #include "device.h"
 #include "descriptor_set_layout.h"
 #include "descriptors.h"
+#include "frame.h"
 #include "frame_buffers.h"
 #include "graphical_environment.h"
 #include "ray_tracing_pipeline.h"
@@ -41,9 +42,7 @@ public:
 
     ~GraphicalEnvironment() override {
         std::clog << "Tearing down" << std::endl;
-        for (auto f : _in_flight_fences) {
-            vkWaitForFences(_device->device(), 1, &f, VK_TRUE, UINT64_MAX);
-        }
+        _frames.clear();
         _frame_buffers.reset();
         _device->cleanup_swap_chain();
         _pipelines.clear();
@@ -52,11 +51,6 @@ public:
         _descriptor_set_layouts.clear();
         _descriptors.clear();
         _uniform_buffers.reset();
-        for (int i = 0; i < _settings.max_frames_in_flight; ++i) {
-            vkDestroySemaphore(_device->device(), _render_finished_semaphores[i], nullptr);
-            vkDestroySemaphore(_device->device(), _image_available_semaphores[i], nullptr);
-            vkDestroyFence(_device->device(), _in_flight_fences[i], nullptr);
-        }
         _vertex_buffer.reset();
         _command_buffers.clear();
         _textures.clear();
@@ -83,6 +77,7 @@ public:
         // load_shader("../../build/assets/shaders/triangle.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
         load_shader("../../build/assets/shaders/shader_buffers.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
         load_shader("../../build/assets/shaders/shader_buffers.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        load_shader("../../build/assets/shaders/ray_tracing.comp.spv", VK_SHADER_STAGE_COMPUTE_BIT);
         std::clog << "Shaders loaded" << std::endl;
     }
 
@@ -92,7 +87,7 @@ public:
 
     void dump_device_info() const;
 
-    void start_interactive_loop(int loops = 100, std::chrono::milliseconds sleep = std::chrono::milliseconds(0)) override;
+    void start_interactive_loop(std::chrono::milliseconds duration = std::chrono::seconds(3)) override;
 
     void draw_frame();
 
@@ -112,7 +107,10 @@ private:
     void surface_init();
 
     void frame_buffers_init();
-    void synchronization_init();
+    void frames_init();
+
+    void draw_frame_computational();
+    void draw_frame_graphical();
 
     void update_uniform_buffer(uint32_t currentImage);
     void update_backgroung_color();
@@ -124,7 +122,7 @@ private:
     VkInstance _instance = VK_NULL_HANDLE;
     GLFWwindow* _window = nullptr;
     VkSurfaceKHR _surface;
-    std::map<PipelineType, std::unique_ptr<GraphicsPipeline>> _pipelines;
+    std::map<PipelineType, std::unique_ptr<Pipeline>> _pipelines;
     std::unique_ptr<Device> _device;
     std::unique_ptr<RenderPass> _render_pass;
     std::unique_ptr<ShaderModules> _shader_modules;
@@ -139,12 +137,10 @@ private:
     std::vector<std::string> _texture_files;
     std::vector<std::unique_ptr<Texture>> _textures;
 
+    std::vector<std::unique_ptr<Frame>> _frames;
+
     UserControl _user_control;
     VkClearValue _background = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-
-    std::vector<VkSemaphore> _image_available_semaphores;
-    std::vector<VkSemaphore> _render_finished_semaphores;
-    std::vector<VkFence> _in_flight_fences;
 };
 
 }  // namespace
