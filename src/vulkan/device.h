@@ -34,8 +34,6 @@ enum class PipelineType {
     Compute
 };
 
-struct GraphicalEnvironmentSettings;
-
 class Device {
 public:
     Device() {}
@@ -46,9 +44,11 @@ public:
         std::clog << "Device destroyed" << std::endl;
     }
 
-    void init(const GraphicalEnvironmentSettings& settings, VkInstance instance, VkSurfaceKHR surface, GLFWwindow *const window);
+    void init(const RayTracingProject::GraphicalEnvironmentSettings &settings, VkInstance instance,
+              VkSurfaceKHR surface, GLFWwindow *const window);
 
-    void init_swap_chain(const GraphicalEnvironmentSettings &settings, VkSurfaceKHR surface, GLFWwindow *window);
+    void init_swap_chain(const RayTracingProject::GraphicalEnvironmentSettings &settings,
+                         VkSurfaceKHR surface, GLFWwindow *window);
 
     void init_image_views();
 

@@ -1,6 +1,7 @@
 target_sources(${PROJECT_LIB}
     PRIVATE
         vulkan/command_buffers.cpp
+        vulkan/descriptors_manager.cpp
         vulkan/device.cpp
         vulkan/graphical_environment_vulkan.cpp
         vulkan/ray_tracing_pipeline.cpp

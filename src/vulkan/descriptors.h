@@ -155,13 +155,12 @@ public:
 
         for (size_t i = 0; i < _max_frames; i++)
         {
-/*
             VkDescriptorBufferInfo uniformBufferInfo{};
-            uniformBufferInfo.buffer = uniformBuffers[i];
+            uniformBufferInfo.buffer = uniform_buffers.uniform_buffer(i);
             uniformBufferInfo.offset = 0;
             uniformBufferInfo.range = sizeof(UniformBufferObject);
 
-            std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+            std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = _descriptor_sets[i];
             descriptorWrites[0].dstBinding = 0;
@@ -170,6 +169,7 @@ public:
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
 
+/*
             VkDescriptorBufferInfo storageBufferInfoLastFrame{};
             storageBufferInfoLastFrame.buffer = shaderStorageBuffers[(i - 1) % MAX_FRAMES_IN_FLIGHT];
             storageBufferInfoLastFrame.offset = 0;
@@ -195,9 +195,8 @@ public:
             descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descriptorWrites[2].descriptorCount = 1;
             descriptorWrites[2].pBufferInfo = &storageBufferInfoCurrentFrame;
-
-            vkUpdateDescriptorSets(device, 3, descriptorWrites.data(), 0, nullptr);
 */
+            vkUpdateDescriptorSets(_device.device(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
 };

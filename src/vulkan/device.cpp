@@ -5,9 +5,12 @@
 
 #include "vulkan/device.h"
 
+#include "common_objects.h"
 #include "vulkan/graphical_environment_vulkan.h"
 
 namespace VulkanImpl {
+
+using namespace RayTracingProject;
 
 static constexpr int MAX_DEVICE_COUNT = 10;
 static constexpr int MAX_QUEUE_COUNT = 4;

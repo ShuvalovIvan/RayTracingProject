@@ -1,0 +1,59 @@
+#pragma once
+
+#include <vulkan/vulkan.h>
+
+#include <array>
+
+#include "vulkan_common_objects.h"
+#include "device.h"
+
+namespace VulkanImpl
+{
+
+struct Binding {
+    BindingSequence binding;
+    VkDescriptorType descriptor_type;
+    BindingType binding_type;
+    VkShaderStageFlags shader_flags;
+    BindingsMaxCount max_count;
+};
+
+inline constexpr Binding s_bindings[] =
+{
+    { BindingSequence::COMMON_UBO, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, BindingType::Buffer,
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, BindingsMaxCount{1} },
+
+    { BindingSequence::TEXTURE_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, BindingType::Image,
+        VK_SHADER_STAGE_FRAGMENT_BIT, BindingsMaxCount{1} }
+};
+
+
+class DescriptorsManager {
+public:
+    DescriptorsManager(const Device &device, const RayTracingProject::GraphicalEnvironmentSettings &settings)
+        : _device(device), _settings(settings) {}
+
+    ~DescriptorsManager();
+
+    void init();
+
+    VkDescriptorSet descriptor(FrameIndex frame_index) const
+    {
+        return _descriptor_sets[static_cast<uint32_t>(frame_index)];
+    }
+
+private:
+    void init_pool();
+    void init_layout();
+    void init_descriptors();
+
+    const Device &_device;
+    const RayTracingProject::GraphicalEnvironmentSettings _settings;
+
+    VkDescriptorPool _descriptor_pool;
+    VkDescriptorSetLayout _descriptor_set_layout;
+
+    std::vector<VkDescriptorSet> _descriptor_sets;
+};
+
+}  // namespace

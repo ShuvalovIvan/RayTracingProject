@@ -12,6 +12,7 @@
 
 namespace VulkanImpl
 {
+    using namespace RayTracingProject;
 
     void GraphicalEnvironment::enable_validation() {
         _validation = std::make_unique<Validation>();
@@ -164,6 +165,9 @@ namespace VulkanImpl
 
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
         _uniform_buffers->init();
+
+        _spheres_buffer = std::make_unique<DataBuffer<Sphere, 200>>(*_device);
+        _spheres_buffer->init(_command_buffers[PipelineType::Compute]->command_pool());
 
         _descriptors[PipelineType::Graphics] = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
         // Only first texture is supported for now.
@@ -349,12 +353,12 @@ namespace VulkanImpl
 
         UniformBufferObject ubo{};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, -2.0f) /*eye*/, glm::vec3(0.0f, 0.0f, 0.0f) /*center*/,
+            glm::vec3(0.0f, 1.0f, 0.0f) /*up*/);
         ubo.proj = glm::perspective(
             glm::radians(45.0f),
             (float)_device->swap_chain_extent().width / (float)_device->swap_chain_extent().height, 0.1f, 10.0f);
-        // The GLM shipped with Vulkan already has the compatible inversion in place, so the axis flip
-        // "ubo.proj[1][1] *= -1;" mentioned in the tutorial is not necessary.
+        ubo.proj[1][1] *= -1;
 
         _uniform_buffers->copy_to_uniform_buffers_for_image(currentImage, ubo);
     }
@@ -380,6 +384,13 @@ namespace VulkanImpl
         _device->init_swap_chain(_settings, _surface, _window);
         _device->init_image_views();
         frame_buffers_init();
+    }
+
+    void GraphicalEnvironment::add_spheres(const std::vector<RayTracingProject::Sphere> &spheres)
+    {
+        for (const auto& s : spheres) {
+            _spheres_buffer->append(s);
+        }
     }
 
 } // namespace

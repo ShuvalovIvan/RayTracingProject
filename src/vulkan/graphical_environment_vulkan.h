@@ -9,6 +9,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "command_buffers.h"
+#include "common_objects.h"
+#include "data_buffer.h"
 #include "device.h"
 #include "descriptor_set_layout.h"
 #include "descriptors.h"
@@ -26,17 +28,13 @@
 
 namespace VulkanImpl {
 
-struct GraphicalEnvironmentSettings {
-    int max_frames_in_flight = 1;
-    int max_images = 2;
-    int width = 1024;
-    int height = 768;
-};
 
 // Top level class to setup the Vulkan.
-class GraphicalEnvironment : public ::GraphicalEnvironment {
+class GraphicalEnvironment : public ::RayTracingProject::GraphicalEnvironment
+{
 public:
-    GraphicalEnvironment(GraphicalEnvironmentSettings settings = {}) {
+    GraphicalEnvironment(RayTracingProject::GraphicalEnvironmentSettings settings = {})
+    {
         _shader_modules = std::make_unique<ShaderModules>();
     }
 
@@ -44,6 +42,7 @@ public:
         std::clog << "Tearing down" << std::endl;
         _frames.clear();
         _frame_buffers.reset();
+        _spheres_buffer.reset();
         _device->cleanup_swap_chain();
         _pipelines.clear();
         _render_pass.reset();
@@ -85,6 +84,8 @@ public:
         _texture_files.push_back(file);
     }
 
+    void add_spheres(const std::vector<RayTracingProject::Sphere> &spheres) override;
+
     void dump_device_info() const;
 
     void start_interactive_loop(std::chrono::milliseconds duration = std::chrono::seconds(3)) override;
@@ -115,7 +116,7 @@ private:
     void update_uniform_buffer(uint32_t currentImage);
     void update_backgroung_color();
 
-    const GraphicalEnvironmentSettings _settings;
+    const RayTracingProject::GraphicalEnvironmentSettings _settings;
     uint32_t _current_frame = 0;
     bool _framebuffer_resized = false;
 
@@ -128,6 +129,7 @@ private:
     std::unique_ptr<ShaderModules> _shader_modules;
     std::unique_ptr<FrameBuffers> _frame_buffers;
     std::unique_ptr<VertexBuffer> _vertex_buffer;
+    std::unique_ptr<DataBuffer<RayTracingProject::Sphere, 200>> _spheres_buffer;
     std::map<PipelineType, std::unique_ptr<CommandBuffers>> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;

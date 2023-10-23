@@ -1,4 +1,21 @@
 #version 450
 
+layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    vec4 color;
+};
+
+//layout(std140, binding = ) readonly buffer sphereBuffer {
+//    int spheres_count;
+//	Sphere spheres[];
+//} SphereData;
+
 void main() {
 }
