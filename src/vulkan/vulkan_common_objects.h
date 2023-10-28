@@ -20,6 +20,11 @@ enum class BindingType {
     Acceleration
 };
 
+enum class BindingKey {
+    PrimaryTexture,
+    CommonUBO,
+};
+
 enum class BindingsMaxCount : uint32_t {};
 
 enum class ImageIndex : uint32_t {};

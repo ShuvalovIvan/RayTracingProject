@@ -113,7 +113,7 @@ private:
     void draw_frame_computational();
     void draw_frame_graphical();
 
-    void update_uniform_buffer(uint32_t currentImage);
+    void update_uniform_buffer(FrameIndex current_frame);
     void update_backgroung_color();
 
     const RayTracingProject::GraphicalEnvironmentSettings _settings;

@@ -68,7 +68,7 @@ public:
         for (size_t i = 0; i < _max_frames; i++)
         {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniform_buffers.uniform_buffer(i);
+            bufferInfo.buffer = uniform_buffers.uniform_buffer(FrameIndex(i), BindingKey::CommonUBO);
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -156,7 +156,7 @@ public:
         for (size_t i = 0; i < _max_frames; i++)
         {
             VkDescriptorBufferInfo uniformBufferInfo{};
-            uniformBufferInfo.buffer = uniform_buffers.uniform_buffer(i);
+            uniformBufferInfo.buffer = uniform_buffers.uniform_buffer(static_cast<FrameIndex>(i), BindingKey::CommonUBO);
             uniformBufferInfo.offset = 0;
             uniformBufferInfo.range = sizeof(UniformBufferObject);
 

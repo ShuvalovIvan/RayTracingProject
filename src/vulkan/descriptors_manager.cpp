@@ -2,6 +2,9 @@
 
 #include "descriptors_manager.h"
 
+#include "texture.h"
+#include "uniform_buffers.h"
+
 namespace VulkanImpl
 {
 
@@ -12,10 +15,11 @@ DescriptorsManager::~DescriptorsManager() {
     vkDestroyDescriptorSetLayout(_device.device(), _descriptor_set_layout, nullptr);
 }
 
-void DescriptorsManager::init() {
+void DescriptorsManager::init(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers)
+{
     init_pool();
     init_layout();
-    init_descriptors();
+    init_descriptors(textures, uniformBuffers);
 }
 
 void DescriptorsManager::init_pool()
@@ -66,7 +70,8 @@ void DescriptorsManager::init_layout() {
     std::clog << "Descriptor set layout initialized" << std::endl;
 }
 
-void DescriptorsManager::init_descriptors() {
+void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers& uniform_buffers)
+{
     std::vector<VkDescriptorSetLayout> layouts(_settings.max_frames_in_flight, _descriptor_set_layout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -85,57 +90,52 @@ void DescriptorsManager::init_descriptors() {
         VkDescriptorSet& descriptor_set = _descriptor_sets[i];
         constexpr auto bindings_size = sizeof(s_bindings) / sizeof(s_bindings[0]);
         std::array<VkWriteDescriptorSet, bindings_size> descriptorWrites{};
+        std::vector<VkDescriptorImageInfo> image_infos;
+        std::vector<VkDescriptorBufferInfo> buffer_infos;
 
-        for (int b = 0; b < bindings_size; ++b) {
+        for (int b = 0, tex = 0; b < bindings_size; ++b) {
             const Binding& binding = s_bindings[b];
-            std::vector<VkDescriptorImageInfo> image_infos(bindings_size, VkDescriptorImageInfo{});
-            std::vector<VkDescriptorBufferInfo> buffer_infos(bindings_size, VkDescriptorBufferInfo{});
+            VkWriteDescriptorSet& write = descriptorWrites[b];
 
             switch (binding.binding_type) {
                 case BindingType::Image: {
                     VkDescriptorImageInfo imageInfo{};
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfo.imageView = texture.texture_image_view();
-                    imageInfo.sampler = texture.texture_sampler();
+                    imageInfo.imageView = textures[tex]->texture_image_view();
+                    imageInfo.sampler = textures[tex++]->texture_sampler();
+                    image_infos.push_back(imageInfo);
+
+                    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    write.dstSet = _descriptor_sets[i];
+                    write.dstBinding = 1;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    write.descriptorCount = 1;
+                    write.pImageInfo = &image_infos.back();
                 }
                 break;
 
                 case BindingType::Buffer: {
+                    VkDescriptorBufferInfo bufferInfo{};
+                    bufferInfo.buffer = uniform_buffers.uniform_buffer(FrameIndex(i), binding.key);
+                    bufferInfo.offset = 0;
+                    bufferInfo.range = uniform_buffers.uniform_buffer_size(FrameIndex(i), binding.key);
+                    buffer_infos.push_back(bufferInfo);
 
-                } break;
+                    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    write.dstSet = _descriptor_sets[i];
+                    write.dstBinding = 0;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    write.descriptorCount = 1;
+                    write.pBufferInfo = &buffer_infos.back();
+                }
+                break;
 
                 case BindingType::Acceleration:
                     assert(false);
             }
         }
-
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = uniform_buffers.uniform_buffer(i);
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = texture.texture_image_view();
-        imageInfo.sampler = texture.texture_sampler();
-
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = _descriptor_sets[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = _descriptor_sets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(_device.device(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }

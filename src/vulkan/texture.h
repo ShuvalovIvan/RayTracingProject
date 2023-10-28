@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "vulkan_common_objects.h"
 #include "buffer_base.h"
 
 namespace VulkanImpl
@@ -9,13 +10,7 @@ namespace VulkanImpl
 
 class Texture : public BufferBase {
 public:
-    Texture(Device &device, const std::string &file) : BufferBase(device), _file(file) {}
-
-    Texture(Texture&& other) : BufferBase(other._device), _file(other._file),
-        _texture_image(other._texture_image), _texture_image_memory(other._texture_image_memory) {
-            other._texture_image = VK_NULL_HANDLE;
-            other._texture_image_memory = VK_NULL_HANDLE;
-        }
+    Texture(Device &device, const std::string &file, BindingKey key) : BufferBase(device), _file(file), _key(key) {}
 
     ~Texture() {
         if (_texture_image) {
@@ -159,6 +154,7 @@ private:
     void init_image_sampler();
 
     const std::string _file;
+    const BindingKey _key;
     VkImage _texture_image;
     VkDeviceMemory _texture_image_memory;
     VkImageView _texture_image_view;

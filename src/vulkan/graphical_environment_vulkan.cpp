@@ -101,7 +101,7 @@ namespace VulkanImpl
         _render_pass->init();
 
         for (const auto& f : _texture_files) {
-            _textures.emplace_back(std::make_unique<Texture>(*_device, f));
+            _textures.emplace_back(std::make_unique<Texture>(*_device, f, BindingKey::PrimaryTexture));
         }
 
         init_pipeline();
@@ -164,7 +164,7 @@ namespace VulkanImpl
         _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->command_pool());
 
         _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
-        _uniform_buffers->init();
+        _uniform_buffers->add<UniformBufferObject>(BindingKey::CommonUBO);
 
         _spheres_buffer = std::make_unique<DataBuffer<Sphere, 200>>(*_device);
         _spheres_buffer->init(_command_buffers[PipelineType::Compute]->command_pool());
@@ -239,7 +239,7 @@ namespace VulkanImpl
         auto &current_frame = *_frames[_current_frame];
         vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
 
-        update_uniform_buffer(_current_frame);
+        update_uniform_buffer(FrameIndex(_current_frame));
 
         vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
 
@@ -344,7 +344,7 @@ namespace VulkanImpl
         _current_frame = (_current_frame + 1) % _settings.max_frames_in_flight;
     }
 
-    void GraphicalEnvironment::update_uniform_buffer(uint32_t currentImage)
+    void GraphicalEnvironment::update_uniform_buffer(FrameIndex current_frame)
     {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -360,7 +360,7 @@ namespace VulkanImpl
             (float)_device->swap_chain_extent().width / (float)_device->swap_chain_extent().height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
-        _uniform_buffers->copy_to_uniform_buffers_for_image(currentImage, ubo);
+        _uniform_buffers->copy_to_uniform_buffers_for_frame(current_frame, BindingKey::CommonUBO, ubo);
     }
 
     void GraphicalEnvironment::update_backgroung_color() {
