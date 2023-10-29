@@ -28,7 +28,10 @@ inline constexpr Binding s_bindings[] =
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, BindingsMaxCount{1} },
 
     { BindingSequence::TEXTURE_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, BindingType::Image, BindingKey::PrimaryTexture,
-        VK_SHADER_STAGE_FRAGMENT_BIT, BindingsMaxCount{1} }
+        VK_SHADER_STAGE_FRAGMENT_BIT, BindingsMaxCount{1} },
+
+    { BindingSequence::FRAME_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, BindingType::SwapChainImage, BindingKey::FrameImage,
+        VK_SHADER_STAGE_COMPUTE_BIT, BindingsMaxCount{1} }
 };
 
 

@@ -150,6 +150,8 @@ namespace VulkanImpl
             texture->load(_command_buffers[PipelineType::Graphics]->command_pool());
         }
 
+        frame_buffers_init();
+
         _descriptors_manager = std::make_unique<DescriptorsManager>(*_device, _settings);
         _descriptors_manager->init(_textures, *_uniform_buffers);
 
@@ -159,8 +161,6 @@ namespace VulkanImpl
         _pipelines[PipelineType::Compute]->init(*_shader_modules, _descriptors_manager->descriptor_set_layout(), *_render_pass);
         _shader_modules.reset();
         std::clog << "Pipeline initialized" << std::endl;
-
-        frame_buffers_init();
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
         _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->command_pool());
@@ -273,7 +273,7 @@ namespace VulkanImpl
             LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image! Err: " + std::to_string(result)));
         }
 
-        update_backgroung_color();
+        // update_backgroung_color();
 
         vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
 

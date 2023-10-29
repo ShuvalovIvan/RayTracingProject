@@ -94,24 +94,45 @@ void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Text
         std::array<VkWriteDescriptorSet, bindings_size> descriptorWrites{};
         std::vector<VkDescriptorImageInfo> image_infos;
         std::vector<VkDescriptorBufferInfo> buffer_infos;
+        image_infos.reserve(bindings_size);
+        buffer_infos.reserve(bindings_size);
 
         for (int b = 0, tex = 0; b < bindings_size; ++b) {
             const Binding& binding = s_bindings[b];
             VkWriteDescriptorSet& write = descriptorWrites[b];
+            write = {};
 
             switch (binding.binding_type) {
                 case BindingType::Image: {
-                    VkDescriptorImageInfo imageInfo{};
+                    image_infos.push_back(VkDescriptorImageInfo{});
+                    VkDescriptorImageInfo &imageInfo = image_infos.back();
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     imageInfo.imageView = textures[tex]->texture_image_view();
                     imageInfo.sampler = textures[tex++]->texture_sampler();
-                    image_infos.push_back(imageInfo);
 
                     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     write.dstSet = _descriptor_sets[i];
-                    write.dstBinding = 1;
+                    write.dstBinding = static_cast<uint32_t>(binding.binding);
                     write.dstArrayElement = 0;
-                    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    write.descriptorType = binding.descriptor_type;
+                    write.descriptorCount = 1;
+                    write.pImageInfo = &image_infos.back();
+                }
+                break;
+
+                case BindingType::SwapChainImage:
+                {
+                    image_infos.push_back(VkDescriptorImageInfo{});
+                    VkDescriptorImageInfo& imageInfo = image_infos.back();
+                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                    imageInfo.imageView = _device.swap_chain_image_views()[i];
+                    imageInfo.sampler = nullptr;
+
+                    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    write.dstSet = _descriptor_sets[i];
+                    write.dstBinding = static_cast<uint32_t>(binding.binding);
+                    write.dstArrayElement = 0;
+                    write.descriptorType = binding.descriptor_type;
                     write.descriptorCount = 1;
                     write.pImageInfo = &image_infos.back();
                 }
@@ -126,9 +147,9 @@ void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Text
 
                     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                     write.dstSet = _descriptor_sets[i];
-                    write.dstBinding = 0;
+                    write.dstBinding = static_cast<uint32_t>(binding.binding);
                     write.dstArrayElement = 0;
-                    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    write.descriptorType = binding.descriptor_type;
                     write.descriptorCount = 1;
                     write.pBufferInfo = &buffer_infos.back();
                 }

@@ -140,7 +140,7 @@ private:
     std::vector<std::unique_ptr<Frame>> _frames;
 
     UserControl _user_control;
-    VkClearValue _background = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    VkClearValue _background = {{{0.0f, 0.0f, 0.0f, 0.5f}}};
 };
 
 }  // namespace
