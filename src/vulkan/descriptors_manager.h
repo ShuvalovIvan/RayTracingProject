@@ -46,6 +46,15 @@ public:
         return _descriptor_sets[static_cast<uint32_t>(frame_index)];
     }
 
+    VkDescriptorSet& descriptor(FrameIndex frame_index)
+    {
+        return _descriptor_sets[static_cast<uint32_t>(frame_index)];
+    }
+
+    VkDescriptorSetLayout descriptor_set_layout() const {
+        return _descriptor_set_layout;
+    }
+
 private:
     void init_pool();
     void init_layout();
@@ -54,8 +63,8 @@ private:
     const Device &_device;
     const RayTracingProject::GraphicalEnvironmentSettings _settings;
 
-    VkDescriptorPool _descriptor_pool;
-    VkDescriptorSetLayout _descriptor_set_layout;
+    VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout _descriptor_set_layout = VK_NULL_HANDLE;
 
     std::vector<VkDescriptorSet> _descriptor_sets;
 };

@@ -92,17 +92,15 @@ namespace VulkanImpl
         _device = std::make_unique<Device>();
         _device->init(_settings, _instance, _surface, _window);
 
-        _descriptor_set_layouts[PipelineType::Graphics] = std::make_unique<DescriptorSetLayout>(*_device.get(), PipelineType::Graphics);
-        _descriptor_set_layouts[PipelineType::Graphics]->init();
-        _descriptor_set_layouts[PipelineType::Compute] = std::make_unique<ComputeDescriptorSetLayout>(*_device.get(), PipelineType::Compute);
-        _descriptor_set_layouts[PipelineType::Compute]->init();
-
         _render_pass = std::make_unique<RenderPass>(*_device);
         _render_pass->init();
 
         for (const auto& f : _texture_files) {
             _textures.emplace_back(std::make_unique<Texture>(*_device, f, BindingKey::PrimaryTexture));
         }
+
+        _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
+        _uniform_buffers->add<UniformBufferObject>(BindingKey::CommonUBO);
 
         init_pipeline();
     }
@@ -142,39 +140,33 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::init_pipeline() {
-        _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
-        _pipelines[PipelineType::Graphics]->init(*_shader_modules, *_descriptor_set_layouts[PipelineType::Graphics], *_render_pass);
-        _pipelines[PipelineType::Compute] = std::make_unique<ComputePipeline>(*_device.get());
-        _pipelines[PipelineType::Compute]->init(*_shader_modules, *_descriptor_set_layouts[PipelineType::Compute], *_render_pass);
-        _shader_modules.reset();
-        std::clog << "Pipeline initialized" << std::endl;
-
-        frame_buffers_init();
-
         _command_buffers[PipelineType::Graphics] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
         _command_buffers[PipelineType::Graphics]->init(_surface);
         _command_buffers[PipelineType::Compute] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
         _command_buffers[PipelineType::Compute]->init(_surface);
 
-        for (auto& texture : _textures) {
+        for (auto &texture : _textures)
+        {
             texture->load(_command_buffers[PipelineType::Graphics]->command_pool());
         }
+
+        _descriptors_manager = std::make_unique<DescriptorsManager>(*_device, _settings);
+        _descriptors_manager->init(_textures, *_uniform_buffers);
+
+        _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
+        _pipelines[PipelineType::Graphics]->init(*_shader_modules, _descriptors_manager->descriptor_set_layout(), *_render_pass);
+        _pipelines[PipelineType::Compute] = std::make_unique<ComputePipeline>(*_device.get());
+        _pipelines[PipelineType::Compute]->init(*_shader_modules, _descriptors_manager->descriptor_set_layout(), *_render_pass);
+        _shader_modules.reset();
+        std::clog << "Pipeline initialized" << std::endl;
+
+        frame_buffers_init();
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
         _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->command_pool());
 
-        _uniform_buffers = std::make_unique<UniformBuffers>(*_device.get(), _settings.max_frames_in_flight);
-        _uniform_buffers->add<UniformBufferObject>(BindingKey::CommonUBO);
-
         _spheres_buffer = std::make_unique<DataBuffer<Sphere, 200>>(*_device);
         _spheres_buffer->init(_command_buffers[PipelineType::Compute]->command_pool());
-
-        _descriptors[PipelineType::Graphics] = std::make_unique<Descriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
-        // Only first texture is supported for now.
-        _descriptors[PipelineType::Graphics]->init(*_descriptor_set_layouts[PipelineType::Graphics], *_uniform_buffers, *_textures[0]);
-
-        _descriptors[PipelineType::Compute] = std::make_unique<ComputeDescriptors>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
-        _descriptors[PipelineType::Compute]->init(*_descriptor_set_layouts[PipelineType::Compute], *_uniform_buffers, *_textures[0]);
 
         frames_init();
     }
@@ -245,7 +237,7 @@ namespace VulkanImpl
 
         _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
             _pipelines,
-            *_descriptors[current_pipeline_type],
+            *_descriptors_manager,
             _current_frame);
 
         submitInfo.commandBufferCount = 1;
@@ -291,7 +283,7 @@ namespace VulkanImpl
             _device->swap_chain_extent(),
             _pipelines,
             *_vertex_buffer,
-            *_descriptors[current_pipeline_type],
+            *_descriptors_manager,
             _current_frame,
             _background,
             *_render_pass);

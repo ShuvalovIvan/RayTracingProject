@@ -8,7 +8,7 @@ void CommandBuffers::reset_record_graphics_command_buffer(
     VkExtent2D swap_chain_extent,
     std::map<PipelineType, std::unique_ptr<Pipeline>>& pipelines,
     const VertexBuffer &vertex_buffer,
-    Descriptors &descriptors,
+    DescriptorsManager &descriptors,
     uint32_t current_frame,
     VkClearValue background,
     const RenderPass &render_pass)
@@ -63,7 +63,7 @@ void CommandBuffers::reset_record_graphics_command_buffer(
     vkCmdBindIndexBuffer(_command_buffers[current_frame], vertex_buffer.index_buffer(), 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipelines[PipelineType::Graphics]->pipeline_layout(), 0, 1, &descriptors.descriptor(current_frame), 0, nullptr);
+        pipelines[PipelineType::Graphics]->pipeline_layout(), 0, 1, &descriptors.descriptor(FrameIndex(current_frame)), 0, nullptr);
 
     vkCmdDrawIndexed(_command_buffers[current_frame], static_cast<uint32_t>(vertex_buffer.indices_size()), 1, 0, 0, 0);
 
@@ -77,7 +77,7 @@ void CommandBuffers::reset_record_graphics_command_buffer(
 
 void CommandBuffers::reset_record_compute_command_buffer(
     std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
-    Descriptors &descriptors,
+    DescriptorsManager &descriptors,
     uint32_t current_frame)
 {
     assert(current_frame < _command_buffers.size());
@@ -98,7 +98,7 @@ void CommandBuffers::reset_record_compute_command_buffer(
     vkCmdBindPipeline(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->pipeline());
 
     vkCmdBindDescriptorSets(_command_buffers[current_frame], VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->pipeline_layout(), 0, 1,
-        &descriptors.descriptor(current_frame), 0, nullptr);
+        &descriptors.descriptor(FrameIndex(current_frame)), 0, nullptr);
 
     vkCmdDispatch(_command_buffers[current_frame], 1 /*PARTICLE_COUNT / 256*/, 1, 1);
 

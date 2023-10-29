@@ -19,7 +19,7 @@ public:
         vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
     }
 
-    virtual void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) = 0;
+    virtual void init(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass) = 0;
 
     VkPipeline pipeline() const
     {
@@ -47,14 +47,14 @@ public:
     {
     }
 
-    void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) override;
+    void init(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass) override;
 
 private:
     GraphicsPipeline(const GraphicsPipeline &) = delete;
     GraphicsPipeline &operator=(const GraphicsPipeline &) = delete;
 
-    void init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout);
-    void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass);
+    void init_pipeline_layout(VkDescriptorSetLayout descriptor_set_layout);
+    void init_graphics_pipeline(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass);
 };
 
 class ComputePipeline : public Pipeline
@@ -67,14 +67,14 @@ public:
         vkDestroyPipelineLayout(_device.device(), _pipeline_layout, nullptr);
     }
 
-    void init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass) override;
+    void init(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass) override;
 
 private:
     ComputePipeline(const ComputePipeline &) = delete;
     ComputePipeline &operator=(const ComputePipeline &) = delete;
 
-    void init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout);
-    void init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass);
+    void init_pipeline_layout(VkDescriptorSetLayout descriptor_set_layout);
+    void init_graphics_pipeline(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass);
 };
 
 } // namespace

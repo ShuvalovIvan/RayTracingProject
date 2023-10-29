@@ -7,19 +7,17 @@
 
 namespace VulkanImpl {
 
-void GraphicsPipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass& render_pass)
+void GraphicsPipeline::init(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass& render_pass)
 {
-    assert(descriptor_set_layout.type() == PipelineType::Graphics);
-
     init_graphics_pipeline(shader_modules, descriptor_set_layout, render_pass);
 }
 
-void GraphicsPipeline::init_pipeline_layout(DescriptorSetLayout &descriptor_set_layout)
+void GraphicsPipeline::init_pipeline_layout(VkDescriptorSetLayout descriptor_set_layout)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout.descriptor_set_layout();
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
 
     pipelineLayoutInfo.pushConstantRangeCount = 0;    // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
@@ -31,7 +29,7 @@ void GraphicsPipeline::init_pipeline_layout(DescriptorSetLayout &descriptor_set_
     std::clog << "Pipeline layout created" << std::endl;
 }
 
-void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass)
+void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass)
 {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -128,14 +126,12 @@ void GraphicsPipeline::init_graphics_pipeline(ShaderModules &shader_modules, Des
     }
 }
 
-void ComputePipeline::init(ShaderModules &shader_modules, DescriptorSetLayout &descriptor_set_layout, const RenderPass &render_pass)
+void ComputePipeline::init(ShaderModules &shader_modules, VkDescriptorSetLayout descriptor_set_layout, const RenderPass &render_pass)
 {
-    assert(descriptor_set_layout.type() == PipelineType::Compute);
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout.descriptor_set_layout();
+    pipelineLayoutInfo.pSetLayouts = &descriptor_set_layout;
 
     if (vkCreatePipelineLayout(_device.device(), &pipelineLayoutInfo, nullptr, &_pipeline_layout) != VK_SUCCESS)
     {

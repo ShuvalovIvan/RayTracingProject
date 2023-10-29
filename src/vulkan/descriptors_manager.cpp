@@ -11,8 +11,10 @@ namespace VulkanImpl
 using namespace RayTracingProject;
 
 DescriptorsManager::~DescriptorsManager() {
-    vkDestroyDescriptorPool(_device.device(), _descriptor_pool, nullptr);
-    vkDestroyDescriptorSetLayout(_device.device(), _descriptor_set_layout, nullptr);
+    if (_descriptor_pool) {
+        vkDestroyDescriptorPool(_device.device(), _descriptor_pool, nullptr);
+        vkDestroyDescriptorSetLayout(_device.device(), _descriptor_set_layout, nullptr);
+    }
 }
 
 void DescriptorsManager::init(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers)

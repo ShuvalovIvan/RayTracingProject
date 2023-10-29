@@ -13,7 +13,7 @@
 #include "data_buffer.h"
 #include "device.h"
 #include "descriptor_set_layout.h"
-#include "descriptors.h"
+#include "descriptors_manager.h"
 #include "frame.h"
 #include "frame_buffers.h"
 #include "graphical_environment.h"
@@ -47,8 +47,7 @@ public:
         _pipelines.clear();
         _render_pass.reset();
         _shader_modules.reset();
-        _descriptor_set_layouts.clear();
-        _descriptors.clear();
+        _descriptors_manager.reset();
         _uniform_buffers.reset();
         _vertex_buffer.reset();
         _command_buffers.clear();
@@ -133,8 +132,7 @@ private:
     std::map<PipelineType, std::unique_ptr<CommandBuffers>> _command_buffers;
     std::unique_ptr<UniformBuffers> _uniform_buffers;
     std::unique_ptr<Validation> _validation;
-    std::map<PipelineType, std::unique_ptr<DescriptorSetLayout>> _descriptor_set_layouts;
-    std::map<PipelineType, std::unique_ptr<Descriptors>> _descriptors;
+    std::unique_ptr<DescriptorsManager> _descriptors_manager;
 
     std::vector<std::string> _texture_files;
     std::vector<std::unique_ptr<Texture>> _textures;
