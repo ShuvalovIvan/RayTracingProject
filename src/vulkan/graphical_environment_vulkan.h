@@ -109,8 +109,9 @@ private:
     void frame_buffers_init();
     void frames_init();
 
-    void draw_frame_computational();
-    void draw_frame_graphical();
+    ImageIndex draw_frame_computational();
+
+    void draw_frame_graphical(ImageIndex imageIndex);
 
     void update_uniform_buffer(FrameIndex current_frame);
     void update_backgroung_color();

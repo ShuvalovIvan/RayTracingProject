@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include "graphical_environment.h"
+#include "vulkan_common_objects.h"
 
 namespace VulkanImpl {
 
@@ -33,6 +34,9 @@ enum class PipelineType {
     Graphics,
     Compute
 };
+
+enum class ImageIndex : uint32_t;
+enum class ImagesCount : uint32_t;
 
 class Device {
 public:
@@ -86,8 +90,22 @@ public:
         return _swap_chain_extent;
     }
 
-    std::vector<VkImageView> swap_chain_image_views() const {
-        return _swap_chain_image_views;
+    ImagesCount swap_chain_image_count() const {
+        assert(!_swap_chain_images.empty());
+        return ImagesCount(_swap_chain_images.size());
+    }
+
+    VkImageView swap_chain_image_view(ImageIndex image_index) const {
+        uint32_t i = static_cast<uint32_t>(image_index);
+        assert(i < _swap_chain_image_views.size());
+        return _swap_chain_image_views[i];
+    }
+
+    VkImage swap_chain_image(ImageIndex image_index) const
+    {
+        uint32_t i = static_cast<uint32_t>(image_index);
+        assert(i < _swap_chain_images.size());
+        return _swap_chain_images[i];
     }
 
     VkQueue graphics_queue() const {

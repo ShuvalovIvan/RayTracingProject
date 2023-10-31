@@ -12,7 +12,7 @@ namespace VulkanImpl
     class FrameBuffers
     {
     public:
-        FrameBuffers(const Device& device, size_t size) : _device(device), _size(size) {}
+        FrameBuffers(const Device &device, ImagesCount image_count) : _device(device), _image_count(image_count) {}
 
         ~FrameBuffers()
         {
@@ -24,15 +24,15 @@ namespace VulkanImpl
             std::clog << "Frame buffer destroyed" << std::endl;
         }
 
-        void init(const RenderPass& render_pass, const std::vector<VkImageView>& swap_chain_image_views)
+        void init(const RenderPass& render_pass)
         {
             assert(_device.swap_chain_extent().width > 10);
             assert(_device.swap_chain_extent().height > 10);
-            assert(swap_chain_image_views.size() == _size);
-            _frame_buffers.resize(_size);
+            _frame_buffers.resize(static_cast<uint32_t>(_image_count));
 
-            for (int i = 0; i < _size; ++i) {
-                VkImageView attachments[] = {swap_chain_image_views[i]};
+            for (int i = 0; i < static_cast<uint32_t>(_image_count); ++i)
+            {
+                VkImageView attachments[] = { _device.swap_chain_image_view(ImageIndex(i)) };
                 VkFramebufferCreateInfo framebufferInfo{};
                 framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
                 framebufferInfo.renderPass = render_pass.render_pass();
@@ -63,7 +63,7 @@ namespace VulkanImpl
         FrameBuffers &operator=(const FrameBuffers&) = delete;
 
         const Device &_device;
-        const size_t _size;
+        const ImagesCount _image_count;
         std::vector<VkFramebuffer> _frame_buffers;
     };
 

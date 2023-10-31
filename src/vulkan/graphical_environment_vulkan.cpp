@@ -152,7 +152,7 @@ namespace VulkanImpl
 
         frame_buffers_init();
 
-        _descriptors_manager = std::make_unique<DescriptorsManager>(*_device, _settings);
+        _descriptors_manager = std::make_unique<DescriptorsManager>(*_device);
         _descriptors_manager->init(_textures, *_uniform_buffers);
 
         _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
@@ -173,9 +173,8 @@ namespace VulkanImpl
 
     void GraphicalEnvironment::frame_buffers_init() {
         _frame_buffers.reset();
-        auto image_views = _device->swap_chain_image_views();
-        _frame_buffers = std::make_unique<FrameBuffers>(*_device.get(), image_views.size());
-        _frame_buffers->init(*_render_pass, image_views);
+        _frame_buffers = std::make_unique<FrameBuffers>(*_device.get(), _device->swap_chain_image_count());
+        _frame_buffers->init(*_render_pass);
         std::clog << "Frame buffers initialized" << std::endl;
     }
 
@@ -218,44 +217,17 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::draw_frame() {
-        draw_frame_computational();
-        draw_frame_graphical();
+        ImageIndex imageIndex = draw_frame_computational();
+        draw_frame_graphical(imageIndex);
     }
 
-    void GraphicalEnvironment::draw_frame_computational() {
+    ImageIndex GraphicalEnvironment::draw_frame_computational() {
         PipelineType current_pipeline_type = PipelineType::Compute;
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         assert(_current_frame < _frames.size());
         auto &current_frame = *_frames[_current_frame];
-        vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
-
-        update_uniform_buffer(FrameIndex(_current_frame));
-
-        vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
-
-        _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
-            _pipelines,
-            *_descriptors_manager,
-            _current_frame);
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &current_frame.render_finished_semaphore(current_pipeline_type);
-
-        if (vkQueueSubmit(_device->compute_queue(), 1, &submitInfo, current_frame.in_flight_fence(current_pipeline_type)) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to submit compute command buffer!");
-        };
-    }
-
-    void GraphicalEnvironment::draw_frame_graphical()
-    {
-        PipelineType current_pipeline_type = PipelineType::Graphics;
-        assert(_current_frame < _frames.size());
-        auto& current_frame = *_frames[_current_frame];
         vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -266,12 +238,49 @@ namespace VulkanImpl
         {
             recreate_swap_chain();
 
-            return;
+            return ImageIndex(imageIndex);
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
             LOG_AND_THROW(std::runtime_error("failed to acquire swap chain image! Err: " + std::to_string(result)));
         }
+
+        update_uniform_buffer(FrameIndex(_current_frame));
+
+        vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
+
+        _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
+            _pipelines,
+            *_descriptors_manager,
+            FrameIndex(_current_frame),
+            ImageIndex(imageIndex));
+
+        _command_buffers[current_pipeline_type]->prepare_to_trace_barrier(FrameIndex(_current_frame),
+                                                                          _device->swap_chain_image(ImageIndex(imageIndex)));
+        _command_buffers[current_pipeline_type]->dispatch_raytrace(
+            _pipelines, *_descriptors_manager,
+            FrameIndex(_current_frame), ImageIndex(imageIndex));
+        _command_buffers[current_pipeline_type]->prepare_to_present_barrier(FrameIndex(_current_frame), _device->swap_chain_image(ImageIndex(imageIndex)));
+        _command_buffers[current_pipeline_type]->end_command_buffer(FrameIndex(_current_frame));
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &current_frame.render_finished_semaphore(current_pipeline_type);
+
+        if (vkQueueSubmit(_device->compute_queue(), 1, &submitInfo, current_frame.in_flight_fence(current_pipeline_type)) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to submit compute command buffer!");
+        };
+        return ImageIndex(imageIndex);
+    }
+
+    void GraphicalEnvironment::draw_frame_graphical(ImageIndex imageIndex)
+    {
+        PipelineType current_pipeline_type = PipelineType::Graphics;
+        assert(_current_frame < _frames.size());
+        auto& current_frame = *_frames[_current_frame];
+        vkWaitForFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type), VK_TRUE, UINT64_MAX);
 
         // update_backgroung_color();
 
@@ -279,12 +288,13 @@ namespace VulkanImpl
 
         assert(_current_frame < static_cast<size_t>(_frame_buffers->size()));
         _command_buffers[current_pipeline_type]->reset_record_graphics_command_buffer(
-            _frame_buffers->frame_buffers()[imageIndex],
+            _frame_buffers->frame_buffers()[static_cast<size_t>(imageIndex)],
             _device->swap_chain_extent(),
             _pipelines,
             *_vertex_buffer,
             *_descriptors_manager,
-            _current_frame,
+            FrameIndex(_current_frame),
+            ImageIndex(imageIndex),
             _background,
             *_render_pass);
 
@@ -319,9 +329,10 @@ namespace VulkanImpl
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
-        presentInfo.pImageIndices = &imageIndex;
+        uint32_t intImageIndex = static_cast<uint32_t>(imageIndex);
+        presentInfo.pImageIndices = &intImageIndex;
 
-        result = vkQueuePresentKHR(_device->present_queue(), &presentInfo);
+        VkResult result = vkQueuePresentKHR(_device->present_queue(), &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _framebuffer_resized)
         {

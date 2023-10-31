@@ -32,6 +32,8 @@ enum class BindingsMaxCount : uint32_t {};
 
 enum class ImageIndex : uint32_t {};
 
+enum class ImagesCount : uint32_t {};
+
 enum class FrameIndex : uint32_t {};
 
 } // namespace

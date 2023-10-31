@@ -26,19 +26,18 @@ void DescriptorsManager::init(const std::vector<std::unique_ptr<Texture>> &textu
 
 void DescriptorsManager::init_pool()
 {
-    assert(_settings.max_frames_in_flight > 0);
     std::array<VkDescriptorPoolSize, sizeof(s_bindings) / sizeof(s_bindings[0])> poolSizes{};
 
     for (int i = 0; i < poolSizes.size(); ++i) {
         poolSizes[i].type = s_bindings[i].descriptor_type;
-        poolSizes[i].descriptorCount = static_cast<uint32_t>(_settings.max_frames_in_flight);
+        poolSizes[i].descriptorCount = static_cast<uint32_t>(_device.swap_chain_image_count());
     }
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(_settings.max_frames_in_flight);
+    poolInfo.maxSets = static_cast<uint32_t>(_device.swap_chain_image_count());
 
     if (vkCreateDescriptorPool(_device.device(), &poolInfo, nullptr, &_descriptor_pool) != VK_SUCCESS)
     {
@@ -74,20 +73,21 @@ void DescriptorsManager::init_layout() {
 
 void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers& uniform_buffers)
 {
-    std::vector<VkDescriptorSetLayout> layouts(_settings.max_frames_in_flight, _descriptor_set_layout);
+    uint32_t images_count = static_cast<uint32_t>(_device.swap_chain_image_count());
+    std::vector<VkDescriptorSetLayout> layouts(static_cast<uint32_t>(images_count), _descriptor_set_layout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = _descriptor_pool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(_settings.max_frames_in_flight);
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(static_cast<uint32_t>(images_count));
     allocInfo.pSetLayouts = layouts.data();
 
-    _descriptor_sets.resize(_settings.max_frames_in_flight);
+    _descriptor_sets.resize(static_cast<uint32_t>(images_count));
     if (vkAllocateDescriptorSets(_device.device(), &allocInfo, _descriptor_sets.data()) != VK_SUCCESS)
     {
         LOG_AND_THROW(std::runtime_error("failed to allocate descriptor sets!"));
     }
 
-    for (size_t i = 0; i < _settings.max_frames_in_flight; i++)
+    for (size_t i = 0; i < static_cast<uint32_t>(images_count); i++)
     {
         VkDescriptorSet& descriptor_set = _descriptor_sets[i];
         constexpr auto bindings_size = sizeof(s_bindings) / sizeof(s_bindings[0]);
@@ -125,7 +125,7 @@ void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Text
                     image_infos.push_back(VkDescriptorImageInfo{});
                     VkDescriptorImageInfo& imageInfo = image_infos.back();
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-                    imageInfo.imageView = _device.swap_chain_image_views()[i];
+                    imageInfo.imageView = _device.swap_chain_image_view(ImageIndex(i));
                     imageInfo.sampler = nullptr;
 
                     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

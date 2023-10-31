@@ -80,13 +80,22 @@ namespace VulkanImpl
                                                   std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
                                                   const VertexBuffer &vertex_buffer,
                                                   DescriptorsManager &descriptors,
-                                                  uint32_t current_frame,
+                                                  FrameIndex current_frame,
+                                                  ImageIndex image_index,
                                                   VkClearValue background,
                                                   const RenderPass &render_pass);
 
         void reset_record_compute_command_buffer(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
                                                  DescriptorsManager &descriptors,
-                                                 uint32_t current_frame);
+                                                 FrameIndex current_frame,
+                                                 ImageIndex image_index);
+
+        void prepare_to_trace_barrier(FrameIndex current_frame, VkImage image);
+        void dispatch_raytrace(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
+                               DescriptorsManager &descriptors,
+                               FrameIndex current_frame, ImageIndex image_index);
+        void prepare_to_present_barrier(FrameIndex current_frame, VkImage image);
+        void end_command_buffer(FrameIndex current_frame);
 
     private:
         CommandBuffers(const CommandBuffers &) = delete;

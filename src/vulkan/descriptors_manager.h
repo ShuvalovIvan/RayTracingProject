@@ -37,21 +37,21 @@ inline constexpr Binding s_bindings[] =
 
 class DescriptorsManager {
 public:
-    DescriptorsManager(const Device &device, const RayTracingProject::GraphicalEnvironmentSettings &settings)
-        : _device(device), _settings(settings) {}
+    DescriptorsManager(const Device &device)
+        : _device(device) {}
 
     ~DescriptorsManager();
 
     void init(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers);
 
-    VkDescriptorSet descriptor(FrameIndex frame_index) const
+    VkDescriptorSet descriptor(ImageIndex image_index) const
     {
-        return _descriptor_sets[static_cast<uint32_t>(frame_index)];
+        return _descriptor_sets[static_cast<uint32_t>(image_index)];
     }
 
-    VkDescriptorSet& descriptor(FrameIndex frame_index)
+    VkDescriptorSet &descriptor(ImageIndex image_index)
     {
-        return _descriptor_sets[static_cast<uint32_t>(frame_index)];
+        return _descriptor_sets[static_cast<uint32_t>(image_index)];
     }
 
     VkDescriptorSetLayout descriptor_set_layout() const {
@@ -64,7 +64,6 @@ private:
     void init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers);
 
     const Device &_device;
-    const RayTracingProject::GraphicalEnvironmentSettings _settings;
 
     VkDescriptorPool _descriptor_pool = VK_NULL_HANDLE;
     VkDescriptorSetLayout _descriptor_set_layout = VK_NULL_HANDLE;
