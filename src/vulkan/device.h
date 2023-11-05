@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <optional>
+#include <set>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -14,12 +15,24 @@ namespace VulkanImpl {
 
 struct QueueFamilyIndices
 {
-    std::optional<uint32_t> graphicsAndComputeFamily;
+    std::optional<uint32_t> computeFamily;
+    std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
 
-    bool isComplete()
+    bool separate_compute_family() const {
+        return computeFamily != graphicsFamily;
+    }
+
+    std::vector<uint32_t> unique_indices() const {
+        std::set<uint32_t> unique{ computeFamily.value(), graphicsFamily.value(), presentFamily.value() };
+        std::vector<uint32_t> result;
+        std::copy(unique.begin(), unique.end(), std::back_inserter(result));
+        return result;
+    }
+
+    bool isComplete() const
     {
-        return graphicsAndComputeFamily.has_value() && presentFamily.has_value();
+        return graphicsFamily.has_value() && computeFamily.has_value() && presentFamily.has_value();
     }
 };
 

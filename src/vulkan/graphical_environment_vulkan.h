@@ -10,6 +10,7 @@
 
 #include "command_buffers.h"
 #include "common_objects.h"
+#include "compute_image.h"
 #include "data_buffer.h"
 #include "device.h"
 #include "descriptor_set_layout.h"
@@ -137,6 +138,7 @@ private:
 
     std::vector<std::string> _texture_files;
     std::vector<std::unique_ptr<Texture>> _textures;
+    std::unique_ptr<ComputeImage> _compute_image;
 
     std::vector<std::unique_ptr<Frame>> _frames;
 

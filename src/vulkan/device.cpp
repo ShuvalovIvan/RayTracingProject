@@ -103,7 +103,7 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
     QueueFamilyIndices indices = findQueueFamilies(_physical_device, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.computeFamily.value(), indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -138,8 +138,8 @@ void Device::init_logical_device(VkSurfaceKHR surface) {
         LOG_AND_THROW(std::runtime_error("failed to create logical device!"));
     }
 
-    vkGetDeviceQueue(_device, indices.graphicsAndComputeFamily.value(), 0, &_graphics_queue);
-    vkGetDeviceQueue(_device, indices.graphicsAndComputeFamily.value(), 0, &_compute_queue);
+    vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphics_queue);
+    vkGetDeviceQueue(_device, indices.computeFamily.value(), 0, &_compute_queue);
     vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_present_queue);
     if (_graphics_queue == VK_NULL_HANDLE || _present_queue == VK_NULL_HANDLE)
     {
@@ -229,12 +229,27 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device, VkSurfaceK
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+    // Dedicated queue for compute
+    // Try to find a queue family index that supports compute but not graphics
+    for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilies.size()); i++)
+    {
+        if ((queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) && ((queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
+        {
+            indices.computeFamily = i;
+            std::clog << "Found a dedicate compute family" << std:: endl;
+            break;
+        }
+    }
+
     int i = 0;
     for (const auto &queueFamily : queueFamilies)
     {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
-            indices.graphicsAndComputeFamily = i;
+            indices.graphicsFamily = i;
+            if (!indices.computeFamily.has_value()) {
+                indices.computeFamily = i;
+            }
         }
 
         VkBool32 presentSupport = false;
@@ -282,15 +297,15 @@ void Device::init_swap_chain(const GraphicalEnvironmentSettings &settings, VkSur
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndices indices = findQueueFamilies(_physical_device, surface);
-    uint32_t queueFamilyIndices[] = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value()};
+    std::vector<uint32_t> queueFamilyIndices = indices.unique_indices();
 
-    if (indices.graphicsAndComputeFamily != indices.presentFamily) {
+    if (queueFamilyIndices.size() > 1) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+        createInfo.queueFamilyIndexCount = queueFamilyIndices.size();
+        createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
     } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }

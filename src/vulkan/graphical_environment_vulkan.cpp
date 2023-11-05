@@ -147,7 +147,7 @@ namespace VulkanImpl
 
         for (auto &texture : _textures)
         {
-            texture->load(_command_buffers[PipelineType::Graphics]->command_pool());
+            texture->load(_command_buffers[PipelineType::Graphics]->graphics_command_pool());
         }
 
         frame_buffers_init();
@@ -163,10 +163,10 @@ namespace VulkanImpl
         std::clog << "Pipeline initialized" << std::endl;
 
         _vertex_buffer = std::make_unique<VertexBuffer>(*_device.get());
-        _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->command_pool());
+        _vertex_buffer->init(_command_buffers[PipelineType::Graphics]->graphics_command_pool());
 
         _spheres_buffer = std::make_unique<DataBuffer<Sphere, 200>>(*_device);
-        _spheres_buffer->init(_command_buffers[PipelineType::Compute]->command_pool());
+        _spheres_buffer->init(_command_buffers[PipelineType::Compute]->compute_command_pool());
 
         frames_init();
     }

@@ -18,14 +18,26 @@ namespace VulkanImpl
         CommandBuffers(const Device& device, int size, PipelineType type) : _device(device), _size(size), _type(type) {}
 
         ~CommandBuffers() {
-            for (auto cb : _command_buffers) {
+            for (auto cb : _command_buffers)
+            {
                 auto result = vkResetCommandBuffer(cb, /*VkCommandBufferResetFlagBits*/ 0);
-                if (result != VK_SUCCESS) {
+                if (result != VK_SUCCESS)
+                {
+                    std::cerr << "Command buffer reset error " << result << std::endl;
+                }
+            }
+            for (auto cb : _compute_command_buffers)
+            {
+                auto result = vkResetCommandBuffer(cb, /*VkCommandBufferResetFlagBits*/ 0);
+                if (result != VK_SUCCESS)
+                {
                     std::cerr << "Command buffer reset error " << result << std::endl;
                 }
             }
             _command_buffers.clear();
-            vkDestroyCommandPool(_device.device(), _command_pool, nullptr);
+            _compute_command_buffers.clear();
+            vkDestroyCommandPool(_device.device(), _graphics_command_pool, nullptr);
+            vkDestroyCommandPool(_device.device(), _compute_command_pool, nullptr);
         }
 
         void init(VkSurfaceKHR surface) {
@@ -34,9 +46,9 @@ namespace VulkanImpl
             VkCommandPoolCreateInfo poolInfo{};
             poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
             poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-            poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily.value();
+            poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-            if (vkCreateCommandPool(_device.device(), &poolInfo, nullptr, &_command_pool) != VK_SUCCESS)
+            if (vkCreateCommandPool(_device.device(), &poolInfo, nullptr, &_graphics_command_pool) != VK_SUCCESS)
             {
                 LOG_AND_THROW(std::runtime_error("failed to create command pool!"));
             }
@@ -45,13 +57,23 @@ namespace VulkanImpl
 
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool = _command_pool;
+            allocInfo.commandPool = _graphics_command_pool;
             allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             allocInfo.commandBufferCount = (uint32_t)_command_buffers.size();
 
             if (vkAllocateCommandBuffers(_device.device(), &allocInfo, _command_buffers.data()) != VK_SUCCESS)
             {
                 LOG_AND_THROW(std::runtime_error("failed to allocate command buffers!"));
+            }
+
+            // Separate compute command pool.
+            VkCommandPoolCreateInfo cmdPoolInfo = {};
+            cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            cmdPoolInfo.queueFamilyIndex = queueFamilyIndices.computeFamily.value();
+            cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            if (vkCreateCommandPool(_device.device(), &cmdPoolInfo, nullptr, &_compute_command_pool) != VK_SUCCESS)
+            {
+                LOG_AND_THROW(std::runtime_error("failed to create command pool!"));
             }
         }
 
@@ -70,9 +92,13 @@ namespace VulkanImpl
             return _command_buffers[index];
         }
 
-        VkCommandPool command_pool() const
+        VkCommandPool graphics_command_pool() const
         {
-            return _command_pool;
+            return _graphics_command_pool;
+        }
+
+        VkCommandPool compute_command_pool() const {
+            return _compute_command_pool;
         }
 
         void reset_record_graphics_command_buffer(VkFramebuffer frame_buffer,
@@ -105,8 +131,10 @@ namespace VulkanImpl
         const int _size;
         const PipelineType _type;
 
-        VkCommandPool _command_pool;
+        VkCommandPool _graphics_command_pool;
+        VkCommandPool _compute_command_pool;
         std::vector<VkCommandBuffer> _command_buffers;
+        std::vector<VkCommandBuffer> _compute_command_buffers;
     };
 
 } // namespace
