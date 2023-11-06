@@ -34,12 +34,11 @@ protected:
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        if (vkAllocateMemory(_device.device(), &allocInfo, nullptr, &buffer_memory) != VK_SUCCESS)
+        if (vkAllocateMemory(_device.device(), &allocInfo, nullptr, &buffer_memory) != VK_SUCCESS ||
+            vkBindBufferMemory(_device.device(), buffer, buffer_memory, 0) != VK_SUCCESS)
         {
             LOG_AND_THROW(std::runtime_error("failed to allocate vertex buffer memory!"));
         }
-
-        vkBindBufferMemory(_device.device(), buffer, buffer_memory, 0);
     }
 
     VkCommandBuffer beginSingleTimeCommands(VkCommandPool command_pool)
@@ -62,7 +61,7 @@ protected:
         return commandBuffer;
     }
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool command_pool)
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool command_pool, VkQueue queue)
     {
         vkEndCommandBuffer(commandBuffer);
 
@@ -71,10 +70,24 @@ protected:
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
-        if (VK_SUCCESS != vkQueueSubmit(_device.graphics_queue(), 1, &submitInfo, VK_NULL_HANDLE)) {
+        // Create fence to ensure that the command buffer has finished executing
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = 0;
+        VkFence fence;
+        if (vkCreateFence(_device.device(), &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+            LOG_AND_THROW(std::runtime_error("failed to create synchronization object!"));
+        }
+
+        if (VK_SUCCESS != vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE)) {
             LOG_AND_THROW(std::runtime_error("vkQueueSubmit failed"));
         }
-        vkQueueWaitIdle(_device.graphics_queue());
+        // Wait for the fence to signal that command buffer has finished executing
+        if (vkWaitForFences(_device.device(), 1, &fence, VK_TRUE, 100000000000) != VK_SUCCESS){
+            LOG_AND_THROW(std::runtime_error("Fence failed"));
+        }
+        vkDestroyFence(_device.device(), fence, nullptr);
+        vkQueueWaitIdle(queue);  // Queue could be compute.
 
         vkFreeCommandBuffers(_device.device(), command_pool, 1, &commandBuffer);
     }
@@ -87,7 +100,7 @@ protected:
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(commandBuffer, command_pool);
+        endSingleTimeCommands(commandBuffer, command_pool, _device.graphics_queue());
     }
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)

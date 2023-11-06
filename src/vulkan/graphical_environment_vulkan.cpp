@@ -150,6 +150,9 @@ namespace VulkanImpl
             texture->load(_command_buffers[PipelineType::Graphics]->graphics_command_pool());
         }
 
+        _compute_image = std::make_unique<ComputeImage>(*_device, *_command_buffers[PipelineType::Compute], BindingKey::FrameImage);
+        _compute_image->init();
+
         frame_buffers_init();
 
         _descriptors_manager = std::make_unique<DescriptorsManager>(*_device);

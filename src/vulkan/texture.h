@@ -122,7 +122,7 @@ private:
             0, nullptr,
             1, &barrier);
 
-        endSingleTimeCommands(commandBuffer, command_pool);
+        endSingleTimeCommands(commandBuffer, command_pool, _device.graphics_queue());
     }
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkCommandPool command_pool)
@@ -147,7 +147,7 @@ private:
 
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(commandBuffer, command_pool);
+        endSingleTimeCommands(commandBuffer, command_pool, _device.graphics_queue());
     }
 
     void init_image_view();
