@@ -10,6 +10,7 @@
 namespace VulkanImpl
 {
 
+class ComputeImage;
 class Texture;
 class UniformBuffers;
 
@@ -42,7 +43,8 @@ public:
 
     ~DescriptorsManager();
 
-    void init(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers);
+    void init(const std::vector<std::unique_ptr<Texture>> &textures,
+        const ComputeImage& computeImg, const UniformBuffers &uniformBuffers);
 
     VkDescriptorSet descriptor(ImageIndex image_index) const
     {
@@ -61,7 +63,8 @@ public:
 private:
     void init_pool();
     void init_layout();
-    void init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers);
+    void init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures,
+                          const ComputeImage &computeImg, const UniformBuffers &uniformBuffers);
 
     const Device &_device;
 

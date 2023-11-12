@@ -2,6 +2,8 @@
 
 #include "buffer_base.h"
 
+#include "command_buffers.h"
+
 namespace VulkanImpl
 {
 
@@ -14,12 +16,17 @@ public:
 
     }
 
+    VkImageView texture_image_view() const {
+        return _texture_image_view;
+    }
+
     void init() {
         auto width = _device.swap_chain_extent().width;
         auto height = _device.swap_chain_extent().height;
         auto format = VK_FORMAT_R8G8B8A8_UNORM;
 
         VkImageCreateInfo imageCreateInfo{};
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         imageCreateInfo.format = format;
         imageCreateInfo.extent = {width, height, 1};
@@ -34,7 +41,7 @@ public:
 
         if (vkCreateImage(_device.device(), &imageCreateInfo, nullptr, &_texture_image) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create image!");
+            throw std::runtime_error("failed to create compute image!");
         }
 
         VkMemoryAllocateInfo memAllocInfo{};
@@ -60,11 +67,13 @@ public:
 
         // Create an image barrier object
         VkImageMemoryBarrier imageMemoryBarrier = {};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
         imageMemoryBarrier.image = _texture_image;
         imageMemoryBarrier.subresourceRange = subresourceRange;
         imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = 0;
 
         // Put barrier inside setup command buffer
         vkCmdPipelineBarrier(

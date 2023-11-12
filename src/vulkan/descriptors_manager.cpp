@@ -2,6 +2,7 @@
 
 #include "descriptors_manager.h"
 
+#include "compute_image.h"
 #include "texture.h"
 #include "uniform_buffers.h"
 
@@ -17,11 +18,12 @@ DescriptorsManager::~DescriptorsManager() {
     }
 }
 
-void DescriptorsManager::init(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers &uniformBuffers)
+void DescriptorsManager::init(
+    const std::vector<std::unique_ptr<Texture>> &textures, const ComputeImage& computeImg, const UniformBuffers &uniformBuffers)
 {
     init_pool();
     init_layout();
-    init_descriptors(textures, uniformBuffers);
+    init_descriptors(textures, computeImg, uniformBuffers);
 }
 
 void DescriptorsManager::init_pool()
@@ -71,7 +73,8 @@ void DescriptorsManager::init_layout() {
     std::clog << "Descriptor set layout initialized" << std::endl;
 }
 
-void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Texture>> &textures, const UniformBuffers& uniform_buffers)
+void DescriptorsManager::init_descriptors(
+    const std::vector<std::unique_ptr<Texture>> &textures, const ComputeImage& computeImg,  const UniformBuffers &uniform_buffers)
 {
     uint32_t images_count = static_cast<uint32_t>(_device.swap_chain_image_count());
     std::vector<VkDescriptorSetLayout> layouts(static_cast<uint32_t>(images_count), _descriptor_set_layout);
@@ -125,7 +128,7 @@ void DescriptorsManager::init_descriptors(const std::vector<std::unique_ptr<Text
                     image_infos.push_back(VkDescriptorImageInfo{});
                     VkDescriptorImageInfo& imageInfo = image_infos.back();
                     imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-                    imageInfo.imageView = _device.swap_chain_image_view(ImageIndex(i));
+                    imageInfo.imageView = computeImg.texture_image_view();
                     imageInfo.sampler = nullptr;
 
                     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

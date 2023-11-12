@@ -140,9 +140,9 @@ namespace VulkanImpl
     }
 
     void GraphicalEnvironment::init_pipeline() {
-        _command_buffers[PipelineType::Graphics] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Graphics);
+        _command_buffers[PipelineType::Graphics] = std::make_unique<CommandBuffers>(*_device.get(), PipelineType::Graphics);
         _command_buffers[PipelineType::Graphics]->init(_surface);
-        _command_buffers[PipelineType::Compute] = std::make_unique<CommandBuffers>(*_device.get(), _settings.max_frames_in_flight, PipelineType::Compute);
+        _command_buffers[PipelineType::Compute] = std::make_unique<CommandBuffers>(*_device.get(), PipelineType::Compute);
         _command_buffers[PipelineType::Compute]->init(_surface);
 
         for (auto &texture : _textures)
@@ -156,7 +156,7 @@ namespace VulkanImpl
         frame_buffers_init();
 
         _descriptors_manager = std::make_unique<DescriptorsManager>(*_device);
-        _descriptors_manager->init(_textures, *_uniform_buffers);
+        _descriptors_manager->init(_textures, *_compute_image, * _uniform_buffers);
 
         _pipelines[PipelineType::Graphics] = std::make_unique<GraphicsPipeline>(*_device.get());
         _pipelines[PipelineType::Graphics]->init(*_shader_modules, _descriptors_manager->descriptor_set_layout(), *_render_pass);

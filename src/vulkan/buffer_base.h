@@ -63,7 +63,9 @@ protected:
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool command_pool, VkQueue queue)
     {
-        vkEndCommandBuffer(commandBuffer);
+        if (VK_SUCCESS != vkEndCommandBuffer(commandBuffer)) {
+            LOG_AND_THROW(std::runtime_error("vkEndCommandBuffer failed"));
+        }
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -79,12 +81,13 @@ protected:
             LOG_AND_THROW(std::runtime_error("failed to create synchronization object!"));
         }
 
-        if (VK_SUCCESS != vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE)) {
+        if (VK_SUCCESS != vkQueueSubmit(queue, 1, &submitInfo, fence))
+        {
             LOG_AND_THROW(std::runtime_error("vkQueueSubmit failed"));
         }
         // Wait for the fence to signal that command buffer has finished executing
-        if (vkWaitForFences(_device.device(), 1, &fence, VK_TRUE, 100000000000) != VK_SUCCESS){
-            LOG_AND_THROW(std::runtime_error("Fence failed"));
+        if (vkWaitForFences(_device.device(), 1, &fence, VK_TRUE, 100000) != VK_SUCCESS){
+            std::cerr << "Fence wait failed" << std::endl;
         }
         vkDestroyFence(_device.device(), fence, nullptr);
         vkQueueWaitIdle(queue);  // Queue could be compute.

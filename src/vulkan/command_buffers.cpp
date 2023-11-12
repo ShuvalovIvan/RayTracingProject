@@ -112,6 +112,7 @@ void CommandBuffers::prepare_to_trace_barrier(FrameIndex current_frame, VkImage 
     access.layerCount = 1;
 
     VkImageMemoryBarrier barrier;
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -164,6 +165,7 @@ void CommandBuffers::prepare_to_present_barrier(FrameIndex current_frame, VkImag
     access.layerCount = 1;
 
     VkImageMemoryBarrier barrier;
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
