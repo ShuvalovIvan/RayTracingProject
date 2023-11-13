@@ -3,21 +3,20 @@
 namespace VulkanImpl
 {
 
-void CommandBuffers::reset_record_graphics_command_buffer(
+VkCommandBuffer CommandBuffers::reset_record_graphics_command_buffer(
     VkFramebuffer frame_buffer,
     VkExtent2D swap_chain_extent,
     std::map<PipelineType, std::unique_ptr<Pipeline>>& pipelines,
     const VertexBuffer &vertex_buffer,
     DescriptorsManager &descriptors,
-    FrameIndex current_frame,
     ImageIndex image_index,
     VkClearValue background,
     const RenderPass &render_pass)
 {
     assert(swap_chain_extent.height > 10);
     assert(swap_chain_extent.width > 10);
-    assert(static_cast<uint32_t>(current_frame) < _command_buffers.size());
-    VkCommandBuffer& command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    assert(static_cast<uint32_t>(image_index) < _command_buffers.size());
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(image_index)];
 
     if (vkResetCommandBuffer(command_buffer, /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS) {
         LOG_AND_THROW(std::runtime_error("failed to reset command buffer!"));
@@ -76,16 +75,16 @@ void CommandBuffers::reset_record_graphics_command_buffer(
     {
         LOG_AND_THROW(std::runtime_error("failed to record command buffer!"));
     }
+    return command_buffer;
 }
 
-void CommandBuffers::reset_record_compute_command_buffer(
+VkCommandBuffer CommandBuffers::reset_record_compute_command_buffer(
     std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
     DescriptorsManager &descriptors,
-    FrameIndex current_frame,
     ImageIndex image_index)
 {
-    assert(static_cast<uint32_t>(current_frame) < _command_buffers.size());
-    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    assert(static_cast<uint32_t>(image_index) < _command_buffers.size());
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(image_index)];
 
     if (vkResetCommandBuffer(command_buffer, /*VkCommandBufferResetFlagBits*/ 0) != VK_SUCCESS)
     {
@@ -94,16 +93,20 @@ void CommandBuffers::reset_record_compute_command_buffer(
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
     if (vkBeginCommandBuffer(command_buffer, &beginInfo) != VK_SUCCESS)
     {
         LOG_AND_THROW(std::runtime_error("failed to begin recording compute command buffer!"));
     }
+    return command_buffer;
 }
 
-void CommandBuffers::prepare_to_trace_barrier(FrameIndex current_frame, VkImage image)
+void CommandBuffers::prepare_to_trace_barrier(ImageIndex current_image, VkImage image)
 {
-    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    assert(static_cast<uint32_t>(current_image) < _command_buffers.size());
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_image)];
+    assert(command_buffer != VK_NULL_HANDLE);
     VkImageSubresourceRange access;
     access.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     access.baseMipLevel = 0;
@@ -140,9 +143,9 @@ void CommandBuffers::prepare_to_trace_barrier(FrameIndex current_frame, VkImage 
 void CommandBuffers::dispatch_raytrace(
     std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
     DescriptorsManager &descriptors,
-    FrameIndex current_frame, ImageIndex image_index)
+    ImageIndex image_index)
 {
-    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(image_index)];
 
     auto &pipeline = pipelines[PipelineType::Compute];
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->pipeline());
@@ -154,9 +157,9 @@ void CommandBuffers::dispatch_raytrace(
     // commandBuffer.dispatch(static_cast<uint32_t>(swapchainExtent.width / 8), static_cast<uint32_t>(swapchainExtent.height / 8), 1);
 }
 
-void CommandBuffers::prepare_to_present_barrier(FrameIndex current_frame, VkImage image)
+void CommandBuffers::prepare_to_present_barrier(ImageIndex image_index, VkImage image)
 {
-    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(image_index)];
     VkImageSubresourceRange access;
     access.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     access.baseMipLevel = 0;
@@ -190,9 +193,9 @@ void CommandBuffers::prepare_to_present_barrier(FrameIndex current_frame, VkImag
         1, &barrier);
 }
 
-void CommandBuffers::end_command_buffer(FrameIndex current_frame)
+void CommandBuffers::end_command_buffer(ImageIndex image_index)
 {
-    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(current_frame)];
+    VkCommandBuffer &command_buffer = _command_buffers[static_cast<uint32_t>(image_index)];
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
     {
         LOG_AND_THROW(std::runtime_error("failed to record compute command buffer!"));

@@ -13,7 +13,6 @@
 #include "compute_image.h"
 #include "data_buffer.h"
 #include "device.h"
-#include "descriptor_set_layout.h"
 #include "descriptors_manager.h"
 #include "frame.h"
 #include "frame_buffers.h"
@@ -116,6 +115,15 @@ private:
 
     void update_uniform_buffer(FrameIndex current_frame);
     void update_backgroung_color();
+
+    void image_memory_barrier(
+        const VkCommandBuffer commandBuffer,
+        const VkImage image,
+        const VkImageSubresourceRange subresourceRange,
+        const VkAccessFlags srcAccessMask,
+        const VkAccessFlags dstAccessMask,
+        const VkImageLayout oldLayout,
+        const VkImageLayout newLayout);
 
     const RayTracingProject::GraphicalEnvironmentSettings _settings;
     uint32_t _current_frame = 0;

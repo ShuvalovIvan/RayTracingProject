@@ -34,6 +34,10 @@ struct QueueFamilyIndices
     {
         return graphicsFamily.has_value() && computeFamily.has_value() && presentFamily.has_value();
     }
+
+    void describe() const {
+        std::clog << "Compute: " << *computeFamily << ", graphics: " << *graphicsFamily << std::endl;
+    }
 };
 
 struct SwapChainSupportDetails

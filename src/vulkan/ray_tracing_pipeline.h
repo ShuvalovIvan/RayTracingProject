@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.h>
 
 #include "vulkan/device.h"
-#include "vulkan/descriptor_set_layout.h"
 #include "vulkan/render_pass.h"
 #include "vulkan/shader_modules.h"
 

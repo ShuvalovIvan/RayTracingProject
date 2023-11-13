@@ -56,7 +56,7 @@ namespace VulkanImpl
                 }
             }
 
-            _command_buffers.resize(static_cast<size_t>(_images_count));
+            _command_buffers.resize(static_cast<size_t>(_images_count), VK_NULL_HANDLE);
 
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -75,15 +75,16 @@ namespace VulkanImpl
             return _type;
         }
 
-        VkCommandBuffer command_buffer(int index) const
+        VkCommandBuffer command_buffer(ImageIndex index) const
         {
-            assert(index < _command_buffers.size());
-            return _command_buffers[index];
+            assert(static_cast<size_t>(index) < _command_buffers.size());
+            return _command_buffers[static_cast<size_t>(index)];
         }
 
-        VkCommandBuffer& command_buffer(int index) {
-            assert(index < _command_buffers.size());
-            return _command_buffers[index];
+        VkCommandBuffer &command_buffer(ImageIndex index)
+        {
+            assert(static_cast<size_t>(index) < _command_buffers.size());
+            return _command_buffers[static_cast<size_t>(index)];
         }
 
         VkCommandPool graphics_command_pool() const
@@ -97,27 +98,25 @@ namespace VulkanImpl
             return _command_pool;
         }
 
-        void reset_record_graphics_command_buffer(VkFramebuffer frame_buffer,
-                                                  VkExtent2D swap_chain_extent,
-                                                  std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
-                                                  const VertexBuffer &vertex_buffer,
-                                                  DescriptorsManager &descriptors,
-                                                  FrameIndex current_frame,
-                                                  ImageIndex image_index,
-                                                  VkClearValue background,
-                                                  const RenderPass &render_pass);
+        VkCommandBuffer reset_record_graphics_command_buffer(VkFramebuffer frame_buffer,
+                                                             VkExtent2D swap_chain_extent,
+                                                             std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
+                                                             const VertexBuffer &vertex_buffer,
+                                                             DescriptorsManager &descriptors,
+                                                             ImageIndex image_index,
+                                                             VkClearValue background,
+                                                             const RenderPass &render_pass);
 
-        void reset_record_compute_command_buffer(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
+        VkCommandBuffer reset_record_compute_command_buffer(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
                                                  DescriptorsManager &descriptors,
-                                                 FrameIndex current_frame,
                                                  ImageIndex image_index);
 
-        void prepare_to_trace_barrier(FrameIndex current_frame, VkImage image);
+        void prepare_to_trace_barrier(ImageIndex current_image, VkImage image);
         void dispatch_raytrace(std::map<PipelineType, std::unique_ptr<Pipeline>> &pipelines,
                                DescriptorsManager &descriptors,
-                               FrameIndex current_frame, ImageIndex image_index);
-        void prepare_to_present_barrier(FrameIndex current_frame, VkImage image);
-        void end_command_buffer(FrameIndex current_frame);
+                               ImageIndex image_index);
+        void prepare_to_present_barrier(ImageIndex image_index, VkImage image);
+        void end_command_buffer(ImageIndex image_index);
 
     private:
         CommandBuffers(const CommandBuffers &) = delete;

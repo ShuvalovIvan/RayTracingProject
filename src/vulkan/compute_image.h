@@ -20,6 +20,10 @@ public:
         return _texture_image_view;
     }
 
+    VkImage texture_image() const {
+        return _texture_image;
+    }
+
     void init() {
         auto width = _device.swap_chain_extent().width;
         auto height = _device.swap_chain_extent().height;

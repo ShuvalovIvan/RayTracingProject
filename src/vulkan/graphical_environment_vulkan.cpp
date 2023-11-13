@@ -226,8 +226,6 @@ namespace VulkanImpl
 
     ImageIndex GraphicalEnvironment::draw_frame_computational() {
         PipelineType current_pipeline_type = PipelineType::Compute;
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         assert(_current_frame < _frames.size());
         auto &current_frame = *_frames[_current_frame];
@@ -252,22 +250,20 @@ namespace VulkanImpl
 
         vkResetFences(_device->device(), 1, &current_frame.in_flight_fence(current_pipeline_type));
 
-        _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
+        auto command_buffer = _command_buffers[current_pipeline_type]->reset_record_compute_command_buffer(
             _pipelines,
             *_descriptors_manager,
-            FrameIndex(_current_frame),
             ImageIndex(imageIndex));
 
-        _command_buffers[current_pipeline_type]->prepare_to_trace_barrier(FrameIndex(_current_frame),
-                                                                          _device->swap_chain_image(ImageIndex(imageIndex)));
         _command_buffers[current_pipeline_type]->dispatch_raytrace(
             _pipelines, *_descriptors_manager,
-            FrameIndex(_current_frame), ImageIndex(imageIndex));
-        _command_buffers[current_pipeline_type]->prepare_to_present_barrier(FrameIndex(_current_frame), _device->swap_chain_image(ImageIndex(imageIndex)));
-        _command_buffers[current_pipeline_type]->end_command_buffer(FrameIndex(_current_frame));
+            ImageIndex(imageIndex));
+        _command_buffers[current_pipeline_type]->end_command_buffer(ImageIndex(imageIndex));
 
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
+        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(ImageIndex(imageIndex));
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &current_frame.render_finished_semaphore(current_pipeline_type);
 
@@ -276,6 +272,32 @@ namespace VulkanImpl
             throw std::runtime_error("failed to submit compute command buffer!");
         };
         return ImageIndex(imageIndex);
+    }
+
+    void GraphicalEnvironment::image_memory_barrier(
+        const VkCommandBuffer commandBuffer,
+        const VkImage image,
+        const VkImageSubresourceRange subresourceRange,
+        const VkAccessFlags srcAccessMask,
+        const VkAccessFlags dstAccessMask,
+        const VkImageLayout oldLayout,
+        const VkImageLayout newLayout)
+    {
+        VkImageMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
+        barrier.srcAccessMask = srcAccessMask;
+        barrier.dstAccessMask = dstAccessMask;
+        barrier.oldLayout = oldLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange = subresourceRange;
+
+        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                             &barrier);
     }
 
     void GraphicalEnvironment::draw_frame_graphical(ImageIndex imageIndex)
@@ -296,7 +318,6 @@ namespace VulkanImpl
             _pipelines,
             *_vertex_buffer,
             *_descriptors_manager,
-            FrameIndex(_current_frame),
             ImageIndex(imageIndex),
             _background,
             *_render_pass);
@@ -311,7 +332,7 @@ namespace VulkanImpl
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(_current_frame);
+        submitInfo.pCommandBuffers = &_command_buffers[current_pipeline_type]->command_buffer(ImageIndex(imageIndex));
 
         VkSemaphore signalSemaphores[] = {current_frame.render_finished_semaphore(current_pipeline_type)};
         submitInfo.signalSemaphoreCount = 1;
